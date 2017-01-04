@@ -12,6 +12,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from sklearn.metrics import mean_squared_error
+from keras.preprocessing import sequence
 
 class SensorDataset():
 
@@ -46,7 +47,8 @@ class SensorDataset():
         for actvity in activities_files:
             for file in activities_files[actvity]:
                 df = pd.read_csv(self.root_dir+"/"+file, index_col=None, header=None)
-                list_x.append(df.values[:146])
+                sensor = sequence.pad_sequences(df.values.T, maxlen=150, dtype='float32')
+                list_x.append(sensor.T)
                 list_y.append([self.activity_dict[actvity][0]])
         #print(np.array(list_x).shape)
         #print(np.array(list_y).shape)
@@ -84,77 +86,151 @@ class SensorDataset():
         act = self.get_filepaths(self.root_dir)
         lst_x, lst_y = self.get_dataframes(act)
         lst_x, lst_y = shuffle(lst_x, lst_y, random_state=0)
-        train_size = int(len(lst_x)*0.67)
+        train_size = int(len(lst_x)*0.80)
+        test_val_size = int(len(lst_x)*0.10)
         print(lst_x.shape)
-        self.x_train, self.x_test = lst_x[0:train_size, :, :], lst_x[train_size:len(lst_x), :, :]
-        self.y_train, self.y_test = lst_y[0:train_size, :], lst_y[train_size:len(lst_x), :]
+        self.x_train, self.x_val, self.x_test = lst_x[0:train_size, :, :], \
+                                                lst_x[train_size:(train_size+test_val_size), :, :], \
+                                                lst_x[(train_size+test_val_size):, :, :]
+
+        self.y_train, self.y_val, self.y_test = lst_y[0:train_size, :], \
+                                                lst_y[train_size:(train_size+test_val_size), :], \
+                                                lst_y[(train_size+test_val_size):, :]
+
+    def predict_timeseries(self):
+        dt = SensorDataset("/Users/rafaelpossas/Dev/multimodal/sensor")
+        scaler = MinMaxScaler()
+
+        X = np.vstack((dt.x_train[:, :, :1], dt.x_test[:, :, :1]))
+        X = X.reshape([X.shape[0] * X.shape[1], 1])
+        X = scaler.fit_transform(X)
+
+        y = np.vstack((dt.y_train, dt.y_test))
+
+        accX_train = dt.x_train[:, :, :1]
+        accX_train = accX_train.reshape([accX_train.shape[0] * accX_train.shape[1], 1])
+        accX_test = dt.x_test[:, :, :1]
+        accX_test = accX_test.reshape([accX_test.shape[0] * accX_test.shape[1], 1])
+        accY_train = dt.y_train
+        accY_test = dt.y_test
+
+        # plt.plot(accX)
+        # plt.show()
+        accX_train = accX_train.ravel(order='C')
+        accX_test = accX_test.ravel(order='C')
+
+        accX_train = scaler.fit_transform(accX_train[:, np.newaxis])
+        accX_test = scaler.fit_transform(accX_test[:, np.newaxis])
+
+        # convert an array of values into a dataset matrix
+        def create_dataset(dataset, look_back=1):
+            dataX, dataY = [], []
+            for i in range(len(dataset) - look_back - 1):
+                a = dataset[i:(i + look_back), 0]
+                dataX.append(a)
+                dataY.append(dataset[i + look_back, 0])
+            return np.array(dataX), np.array(dataY)
+
+        accX_train, accY_train = create_dataset(accX_train)
+        accX_test, accY_test = create_dataset(accX_test)
+        accX_train = np.reshape(accX_train, (accX_train.shape[0], 1, accX_train.shape[1]))
+        accX_test = np.reshape(accX_test, (accX_test.shape[0], 1, accX_test.shape[1]))
+        print(accX_train.shape, accX_test.shape)
+
+        model = Sequential()
+        model.add(LSTM(4, input_dim=1))
+        model.add(Dense(1))
+        model.compile(loss='mean_squared_error', optimizer='adam')
+        model.fit(accX_train, accY_train, nb_epoch=100, batch_size=100, verbose=2)
+
+        trainPredict = model.predict(accX_train)
+        testPredict = model.predict(accX_test)
+
+        trainPredict = scaler.inverse_transform(trainPredict)
+        trainY = scaler.inverse_transform([accY_train])
+        testPredict = scaler.inverse_transform(testPredict)
+        testY = scaler.inverse_transform([accY_test])
+        # calculate root mean squared error
+        trainScore = math.sqrt(mean_squared_error(trainY[0], trainPredict[:, 0]))
+        print('Train Score: %.2f RMSE' % (trainScore))
+        testScore = math.sqrt(mean_squared_error(testY[0], testPredict[:, 0]))
+        print('Test Score: %.2f RMSE' % (testScore))
+        # shift train predictions for plotting
+        trainPredictPlot = np.empty_like(X)
+        trainPredictPlot[:, :] = np.nan
+        trainPredictPlot[1:len(trainPredict) + 1, :] = trainPredict
+        # shift test predictions for plotting
+        testPredictPlot = np.empty_like(X)
+        testPredictPlot[:, :] = np.nan
+        testPredictPlot[len(trainPredict) + (1 * 2) + 1:len(X) - 1, :] = testPredict
+        # plot baseline and predictions
+        plt.plot(scaler.inverse_transform(X))
+        plt.plot(trainPredictPlot)
+        plt.plot(testPredictPlot)
+        plt.show()
 
 
 if __name__=='__main__':
-    dt = SensorDataset("/home/rafaelpossas/dev/multimodal_dataset/sensor")
+    dt = SensorDataset("/Users/rafaelpossas/Dev/multimodal/sensor")
     scaler = MinMaxScaler()
+    num_sensor = 9
 
-    dataset = np.vstack((dt.x_train[:, :, :1],dt.x_test[:, :, :1]))
-    dataset = dataset.reshape([dataset.shape[0]*dataset.shape[1], 1])
-    dataset = scaler.fit_transform(dataset)
+    accX_train = dt.x_train[:, :, : num_sensor]
+    accX_val = dt.x_val[:, :, :num_sensor]
+    accX_test = dt.x_test[:, :, : num_sensor]
+    #accX_train = accX_train.reshape([accX_train.shape[0] * accX_train.shape[1], 1])
+    #accX_test = accX_test.reshape([accX_test.shape[0] * accX_test.shape[1], 1])
+    accY_train = dt.y_train
+    accY_val = dt.y_val
+    accY_test = dt.y_test
 
-    accX_train = dt.x_train[:, :, :1]
-    accX_train = accX_train.reshape([accX_train.shape[0]*accX_train.shape[1], 1])
-    accX_test = dt.x_test[:, :, :1]
-    accX_test = accX_test.reshape([accX_test.shape[0] * accX_test.shape[1], 1])
-    #plt.plot(accX)
-    #plt.show()
-    accX_train= accX_train.ravel(order='C')
-    accX_test = accX_test.ravel(order='C')
+    # plt.plot(accX)
+    # plt.show()
+    #accX_train = accX_train.ravel(order='C')
+    #accX_test = accX_test.ravel(order='C')
 
-    accX_train = scaler.fit_transform(accX_train[:, np.newaxis])
-    accX_test = scaler.fit_transform(accX_test[:, np.newaxis])
+    #accX_train = scaler.fit_transform(accX_train[:, np.newaxis])
+    #accX_test = scaler.fit_transform(accX_test[:, np.newaxis])
+    split_train_x = []
+    split_train_y = []
+    split_val_x = []
+    split_val_y = []
+    split_test_x = []
+    split_test_y = []
 
-    # convert an array of values into a dataset matrix
-    def create_dataset(dataset, look_back=1):
-        dataX, dataY = [], []
-        for i in range(len(dataset) - look_back - 1):
-            a = dataset[i:(i + look_back), 0]
-            dataX.append(a)
-            dataY.append(dataset[i + look_back, 0])
-        return np.array(dataX), np.array(dataY)
 
-    accX_train, accY_train = create_dataset(accX_train)
-    accX_test, accY_test = create_dataset(accX_test)
-    accX_train = np.reshape(accX_train, (accX_train.shape[0], 1, accX_train.shape[1]))
-    accX_test = np.reshape(accX_test, (accX_test.shape[0], 1, accX_test.shape[1]))
-    print(accX_train.shape, accX_test.shape)
+    n = 50 # group size
+    m = 0 # overlap size
+    num_splits = 5
+
+    for i in range(accX_train.shape[0]):
+        currentsplit = [accX_train[i, j:j+n-m] for j in xrange(0,len(accX_train[i]), n-m)]
+        split_train_x = split_train_x + currentsplit
+        split_train_y = split_train_y + [accY_train[i] for x in range(len(currentsplit))]
+
+    for i in range(accX_test.shape[0]):
+        currentsplit = [accX_val[i, j:j+n-m] for j in xrange(0,len(accX_val[i]), n-m)]
+        split_val_x = split_val_x + currentsplit
+        split_val_y = split_val_y + [accY_val[i] for x in range(len(currentsplit))]
+
+    for i in range(accX_test.shape[0]):
+        currentsplit = [accX_test[i, j:j+n-m] for j in xrange(0,len(accX_test[i]), n-m)]
+        split_test_x = split_test_x + currentsplit
+        split_test_y = split_test_y + [accY_test[i] for x in range(len(currentsplit))]
+
+
+    split_train_x = np.array(split_train_x)
+    split_train_y = np.array(split_train_y)
+    split_val_x = np.array(split_val_x)
+    split_val_y = np.array(split_val_y)
+    split_test_x = np.array(split_test_x)
+    split_test_y = np.array(split_test_y)
 
     model = Sequential()
-    model.add(LSTM(4, input_dim=1))
-    model.add(Dense(1))
-    model.compile(loss='mean_squared_error', optimizer='adam')
-    model.fit(accX_train, accY_train, nb_epoch=100, batch_size=50, verbose=2)
-
-    trainPredict = model.predict(accX_train)
-    testPredict = model.predict(accX_test)
-
-    trainPredict = scaler.inverse_transform(trainPredict)
-    trainY = scaler.inverse_transform([accY_train])
-    testPredict = scaler.inverse_transform(testPredict)
-    testY = scaler.inverse_transform([accY_test])
-    # calculate root mean squared error
-    trainScore = math.sqrt(mean_squared_error(trainY[0], trainPredict[:, 0]))
-    print('Train Score: %.2f RMSE' % (trainScore))
-    testScore = math.sqrt(mean_squared_error(testY[0], testPredict[:, 0]))
-    print('Test Score: %.2f RMSE' % (testScore))
-    # shift train predictions for plotting
-    trainPredictPlot = np.empty_like(dataset)
-    trainPredictPlot[:, :] = np.nan
-    trainPredictPlot[1:len(trainPredict) + 1, :] = trainPredict
-    # shift test predictions for plotting
-    testPredictPlot = np.empty_like(dataset)
-    testPredictPlot[:, :] = np.nan
-    testPredictPlot[len(trainPredict) + (1 * 2) + 1:len(dataset) - 1, :] = testPredict
-    # plot baseline and predictions
-    plt.plot(scaler.inverse_transform(dataset))
-    plt.plot(trainPredictPlot)
-    plt.plot(testPredictPlot)
-    plt.show()
-
-
+    model.add(LSTM(128, input_shape=(split_train_x.shape[1], split_train_x.shape[2])))
+    model.add(Dense(split_train_y.shape[1], activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    model.fit(split_train_x, split_train_y, validation_data=(split_val_x, split_val_y), nb_epoch=100, batch_size=16)
+    scores = model.evaluate(split_test_x, split_test_y, verbose=0)
+    print("Accuracy: %.2f%%" % (scores[1] * 100))
+    print(model.summary())
