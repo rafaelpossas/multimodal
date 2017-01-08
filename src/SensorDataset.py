@@ -9,6 +9,8 @@ class SensorDataset():
 
     def __init__(self, root_dir):
         self.root_dir = root_dir
+        self.lst_x = []
+        self.lst_y = []
         self.activity_dict = {
             'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
             'act04': (3, 'riding elevator up'), 'act05': (4, 'riding elevator down'), 'act06':(5, 'riding escalator up'),
@@ -52,30 +54,27 @@ class SensorDataset():
 
         return activities_files  # Self-explanatory.
 
-    def load_dataset(self, train_size=0.8, test_val_size=0.1, split_train=True,
-                  group_size=50, overlap_size=0, selected_sensors=[]):
+    def load_dataset(self, train_size=0.8, split_train=True,
+                  group_size=50, step_size=0, selected_sensors=[]):
 
         act = self.get_filepaths(self.root_dir)
-        lst_x, lst_y = self._load_from_file(act,selected_sensors)
-        lst_x, lst_y = shuffle(lst_x, lst_y, random_state=0)
+        self.lst_x, self.lst_y = self._load_from_file(act, selected_sensors)
+        self.lst_x, self.lst_y = shuffle(self.lst_x, self.lst_y, random_state=0)
 
-        train_size = int(len(lst_x)*train_size)
-        test_val_size = int(len(lst_x)*test_val_size)
+        train_size = int(len(self.lst_x)*train_size)
 
-        self.x_train, self.x_val, self.x_test = lst_x[0:train_size, :, :], \
-                                                lst_x[train_size:(train_size+test_val_size), :, :], \
-                                                lst_x[(train_size+test_val_size):, :, :]
+        self.x_train, self.x_test = self.lst_x[0:train_size, :, :], \
+                                    self.lst_x[train_size:, :, :]
 
-        self.y_train, self.y_val, self.y_test = lst_y[0:train_size, :], \
-                                                lst_y[train_size:(train_size+test_val_size), :], \
-                                                lst_y[(train_size+test_val_size):, :]
+        self.y_train, self.y_test = self.lst_y[0:train_size, :], \
+                                    self.lst_y[train_size:, :]
         if split_train:
-            self.x_train, self.y_train = self.split_windows(group_size=group_size, overlap_size=overlap_size, X=self.x_train, y=self.y_train)
-            self.x_val, self.y_val = self.split_windows(group_size=group_size, overlap_size=overlap_size, X=self.x_val, y=self.y_val)
-            self.x_test, self.y_test = self.split_windows(group_size=group_size, overlap_size=overlap_size, X=self.x_test, y=self.y_test)
+            self.x_train, self.y_train = self.split_windows(group_size=group_size,
+                                                            step_size=step_size, X=self.x_train, y=self.y_train)
+            self.x_test, self.y_test = self.split_windows(group_size=group_size,
+                                                          step_size=step_size, X=self.x_test, y=self.y_test)
 
         print("Train {}.{}".format(self.x_train.shape, self.y_train.shape))
-        print("Validation {}.{}".format(self.x_val.shape, self.y_val.shape))
         print("Test {}.{}".format(self.x_test.shape, self.y_test.shape))
 
     def _load_from_file(self, activities_files, selected_sensors):
@@ -101,14 +100,10 @@ class SensorDataset():
         n_values = np.max(y_) + 1
         return np.eye(n_values)[np.array(y_, dtype=np.int32)]  # Returns FLOATS
 
-    def split_windows(self, group_size, overlap_size, X, y):
-        split_x = []
-        split_y = []
-
-        for i in range(X.shape[0]):
-            currentsplit = [X[i, j:j + group_size - overlap_size] for j in xrange(0, len(X[i]), group_size - overlap_size)]
-            split_x = split_x + currentsplit
-            split_y = split_y + [y[i] for x in range(len(currentsplit))]
-
-        return np.array(split_x), np.array(split_y)
+    def split_windows(self, group_size, step_size, X, y):
+        number_groups =((X.shape[1]-group_size)/step_size)+1
+        split_xy = [(X[j, i:i + group_size], y[j]) for j in range(len(X)) for i in range(0, number_groups * step_size, step_size)]
+        split_x = np.array([x[0] for x in split_xy])
+        split_y = np.array([y[1] for y in split_xy])
+        return split_x, split_y
 
