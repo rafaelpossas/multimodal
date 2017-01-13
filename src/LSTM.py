@@ -1,27 +1,29 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import math
+
+
 from SensorDataset import SensorDataset
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
-from sklearn.metrics import mean_squared_error
+
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.callbacks import EarlyStopping
 from itertools import *
 from keras.layers import Dropout
+from Utils import *
 
 
 class RegressionLSTM():
 
-    def __init__(self):
-        self.scaler = MinMaxScaler()
+    def __init__(self, scaler):
+        self.scaler = scaler
 
     def format_data(self, dt):
         x_train = dt.x_train[:, :, :]
-        x_train = x_train.reshape([x_train.shape[0] * x_train.shape[1], 1])
+        axis = x_train.shape[2]
+        x_train = x_train.reshape([x_train.shape[0] * x_train.shape[1], axis])
         x_test = dt.x_test[:, :, :]
-        x_test = x_test.reshape([x_test.shape[0] * x_test.shape[1], 1])
+        x_test = x_test.reshape([x_test.shape[0] * x_test.shape[1], axis])
         y_train = dt.y_train
         y_test = dt.y_test
 
@@ -55,45 +57,13 @@ class RegressionLSTM():
         model.compile(loss='mean_squared_error', optimizer='rmsprop')
         return model
 
-    def fit_transform(self, model, x_train, y_train, x_test, nb_epoch=100, batch_size=100,verbose=2):
-        model.fit(x_train, y_train, nb_epoch=nb_epoch, batch_size=batch_size, verbose=2)
+    def fit_transform(self, model, x_train, y_train, x_test, nb_epoch=100, batch_size=100, verbose=2):
+        model.fit(x_train, y_train, nb_epoch=nb_epoch, batch_size=batch_size, verbose=verbose)
         trainPredict = model.predict(x_train)
         testPredict = model.predict(x_test)
 
         return trainPredict, testPredict
 
-    def plot_predictions(self, dt, train_prediction, test_prediction, y_train, y_test):
-
-        X = np.vstack((dt.x_train[:, :, :], dt.x_test[:, :, :]))
-        X = X.reshape([X.shape[0] * X.shape[1], 1])
-        X = self.scaler.fit_transform(X)
-
-
-        train_prediction = self.scaler.inverse_transform(train_prediction)
-        y_train = self.scaler.inverse_transform([y_train])
-
-        test_prediction = self.scaler.inverse_transform(test_prediction)
-        y_test = self.scaler.inverse_transform([y_test])
-
-        # calculate root mean squared error
-        trainScore = math.sqrt(mean_squared_error(y_train[0], train_prediction[:, 0]))
-        print('Train Score: %.2f RMSE' % (trainScore))
-        testScore = math.sqrt(mean_squared_error(y_test[0], test_prediction[:, 0]))
-        print('Test Score: %.2f RMSE' % (testScore))
-
-        # shift train predictions for plotting
-        trainPredictPlot = np.empty_like(X)
-        trainPredictPlot[:, :] = np.nan
-        trainPredictPlot[1:len(train_prediction) + 1, :] = train_prediction
-        # shift test predictions for plotting
-        testPredictPlot = np.empty_like(X)
-        testPredictPlot[:, :] = np.nan
-        testPredictPlot[len(train_prediction) + (1 * 2) + 1:len(X) - 1, :] = test_prediction
-        # plot baseline and predictions
-        plt.plot(self.scaler.inverse_transform(X))
-        plt.plot(trainPredictPlot)
-        plt.plot(testPredictPlot)
-        return plt
 
 
 
@@ -107,9 +77,9 @@ class SensorLSTM():
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         return model
 
-    def fit_transform(self, model, dataset, nb_epoch=100, batch_size=16, callbacks=[]):
+    def fit_transform(self, model, dataset, nb_epoch=100, batch_size=16, callbacks=[],verbose=0):
         model.fit(dataset.x_train, dataset.y_train, validation_split=0.1,
-                  nb_epoch=nb_epoch, batch_size=batch_size, callbacks=callbacks)
+                  nb_epoch=nb_epoch, batch_size=batch_size, callbacks=callbacks, verbose=verbose)
         scores = model.evaluate(dataset.x_test, dataset.y_test, verbose=0)
         return scores
 
@@ -118,15 +88,17 @@ class SensorLSTM():
 
 if __name__=='__main__':
     dt = SensorDataset("/Users/rafaelpossas/Dev/multimodal/sensor")
-    lstm = RegressionLSTM()
-    dt.load_dataset(train_size=0.8, split_train=True, group_size=150, step_size=150, selected_sensors=['accx'])
+    scaler = MinMaxScaler()
+    lstm = RegressionLSTM(scaler)
+    dt.load_dataset(train_size=0.8, split_train=True, group_size=150, step_size=150,
+                    selected_sensors=['accx'])
     x_train, x_test, y_train, y_test = lstm.format_data(dt)
     train_prediction, test_prediction = lstm.fit_transform(lstm.get_model(), x_train, y_train, x_test,
                                                            nb_epoch=10,
                                                            batch_size=100,
                                                            verbose=0)
-    lstm.plot_predictions(dt, train_prediction, test_prediction,
-                            y_train, y_test)
+    plot_predictions([dt], [train_prediction], [test_prediction],
+                            [y_train], [y_test], ['accx'], scaler)
     # best_accuracy = 60
     # sensor_columns = [['accx', 'accy', 'accz'],
     #                   ['grax', 'gray', 'graz'],
