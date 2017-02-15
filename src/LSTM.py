@@ -87,7 +87,7 @@ class SensorLSTM():
 
 
 if __name__=='__main__':
-    dt = SensorDataset("/Users/rafaelpossas/Dev/multimodal/sensor")
+    dt = SensorDataset("/home/rafaelpossas/dev/multimodal_dataset/sensor")
     scaler = MinMaxScaler()
     lstm = RegressionLSTM(scaler)
     dt.load_dataset(train_size=0.9, split_train=True, group_size=75, step_size=75,
@@ -105,6 +105,9 @@ if __name__=='__main__':
     input_dim = 1
     timesteps = 75
     dropout_rate = 0.3
+    nb_epoch = 30
+    batch_size = 10
+    verbose = 1
 
     # x_train = dt.x_train.ravel(order='C')
     # x_train = scaler.fit_transform(x_train[:, np.newaxis])
@@ -123,36 +126,36 @@ if __name__=='__main__':
     # x_train_unsupervised = x_train[int(mid_index):]
 
     model = Sequential()
-    model.add(LSTM(latent_dim, input_shape=(timesteps, input_dim),return_sequences=True))
-    model.add(LSTM(latent_dim))
+    model.add(LSTM(output_dim=latent_dim, input_shape=(timesteps, input_dim)))
     model.add(RepeatVector(timesteps))
-    model.add(LSTM(latent_dim, return_sequences=True))
     model.add(LSTM(input_dim, return_sequences=True))
     model.compile(optimizer='rmsprop', loss="mse")
-    model.fit(dt.x_train, dt.x_train, nb_epoch=25, batch_size=10, verbose=2)
+    model.fit(dt.x_train, dt.x_train, nb_epoch=nb_epoch, batch_size=batch_size, verbose=verbose)
 
     inputs = Input(shape=(timesteps, input_dim))
-    encoder = Model(inputs, model.layers[1](inputs))
+    encoder = Model(inputs, model.layers[0](inputs))
 
     encoded_input = Input(shape=(timesteps, latent_dim))
     decoder = Model(input=encoded_input, output=model.layers[-1](encoded_input))
 
-    encoder_weights = model.layers[0].get_weights()
+    #encoder_weights = model.layers[0].get_weights()
 
-    sensor_model = Sequential()
-    sensor_model.add(LSTM(latent_dim, input_shape=(dt.x_train.shape[1], dt.x_train.shape[2]), weights=encoder_weights))
-    sensor_model.add(Dropout(0.3))
-    sensor_model.add(Dense(dt.y_train.shape[1], activation='softmax'))
-    sensor_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
-    sensor_model.fit(dt.x_test, dt.y_test, nb_epoch=25, batch_size=20, verbose=2)
-    #
-    # sample = x_train[0, :, :]
-    # sample = sample.reshape(1, sample.shape[0], sample.shape[1])
-    # code = encoder.predict(sample)
-    # code = np.repeat(code, timesteps)
-    # code = code.reshape(1, timesteps, latent_dim)
-    # reconstructed = decoder.predict(code)
+    # sensor_model = Sequential()
+    # sensor_model.add(LSTM(latent_dim, input_shape=(dt.x_train.shape[1], dt.x_train.shape[2]), weights=encoder_weights))
+    # sensor_model.add(Dropout(0.3))
+    # sensor_model.add(Dense(dt.y_train.shape[1], activation='softmax'))
+    # sensor_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    # sensor_model.fit(dt.x_test, dt.y_test, nb_epoch=25, batch_size=20, verbose=2)
 
+    sample = dt.x_test[0, :, :]
+    sample = sample.reshape(1, sample.shape[0], sample.shape[1])
+    code = encoder.predict(sample)
+    code = np.repeat(code, timesteps)
+    code = code.reshape(1, timesteps, latent_dim)
+    reconstructed = decoder.predict(code)
+
+    plt.plot(sample[0])
+    plt.plot(reconstructed[0])
 
 
     # inputs = Input(shape=(timesteps, input_dim))
