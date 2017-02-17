@@ -87,7 +87,7 @@ class SensorLSTM():
 
 
 if __name__=='__main__':
-    dt = SensorDataset("/home/rafaelpossas/dev/multimodal_dataset/sensor")
+    dt = SensorDataset("/Users/rafaelpossas/Dev/multimodal/sensor")
     scaler = MinMaxScaler()
     lstm = RegressionLSTM(scaler)
     dt.load_dataset(train_size=0.9, split_train=True, group_size=75, step_size=75,
@@ -101,13 +101,13 @@ if __name__=='__main__':
     #                         [y_train], [y_test], ['accx'], scaler)
 
 
-    latent_dim = 25
+    latent_dim = 50
     input_dim = 1
     timesteps = 75
     dropout_rate = 0.3
-    nb_epoch = 30
+    nb_epoch = 1
     batch_size = 10
-    verbose = 1
+    verbose = 2
 
     # x_train = dt.x_train.ravel(order='C')
     # x_train = scaler.fit_transform(x_train[:, np.newaxis])
@@ -124,38 +124,76 @@ if __name__=='__main__':
     # y_train_supervised = dt.y_train[0:int(mid_index)]
     #
     # x_train_unsupervised = x_train[int(mid_index):]
+    encoder_0 = Sequential([LSTM(output_dim=latent_dim, input_shape=(timesteps, input_dim))])
+    decoder_0 = Sequential([LSTM(output_dim=input_dim, input_dim=latent_dim, return_sequences=True)])
 
-    model = Sequential()
-    model.add(LSTM(output_dim=latent_dim, input_shape=(timesteps, input_dim)))
-    model.add(RepeatVector(timesteps))
-    model.add(LSTM(input_dim, return_sequences=True))
-    model.compile(optimizer='rmsprop', loss="mse")
-    model.fit(dt.x_train, dt.x_train, nb_epoch=nb_epoch, batch_size=batch_size, verbose=verbose)
+    autoencoder_0 = Sequential()
+    autoencoder_0.add(encoder_0)
+    autoencoder_0.add(RepeatVector(timesteps))
+    autoencoder_0.add(decoder_0)
+    autoencoder_0.output_reconstruction = True
 
-    inputs = Input(shape=(timesteps, input_dim))
-    encoder = Model(inputs, model.layers[0](inputs))
+    print("Fitting First Autoencoder")
+    ae_model_0 = Sequential()
+    ae_model_0.add(autoencoder_0)
+    ae_model_0.compile(optimizer='rmsprop', loss="mse")
+    ae_model_0.fit(dt.x_train, dt.x_train, nb_epoch=nb_epoch, batch_size=batch_size, verbose=verbose)
 
-    encoded_input = Input(shape=(timesteps, latent_dim))
-    decoder = Model(input=encoded_input, output=model.layers[-1](encoded_input))
+    temp_0 = Sequential()
+    temp_0.add(encoder_0)
+    temp_0.compile(loss='mse', optimizer='adam')
 
-    #encoder_weights = model.layers[0].get_weights()
+    X_train_1 = temp_0.predict(dt.x_train)
+    X_train_1 = X_train_1.reshape(X_train_1.shape[0], X_train_1.shape[1], 1)
 
-    # sensor_model = Sequential()
-    # sensor_model.add(LSTM(latent_dim, input_shape=(dt.x_train.shape[1], dt.x_train.shape[2]), weights=encoder_weights))
-    # sensor_model.add(Dropout(0.3))
-    # sensor_model.add(Dense(dt.y_train.shape[1], activation='softmax'))
-    # sensor_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
-    # sensor_model.fit(dt.x_test, dt.y_test, nb_epoch=25, batch_size=20, verbose=2)
+    encoder_1 = Sequential([LSTM(output_dim=int(latent_dim/2), input_shape=(latent_dim, input_dim))])
+    decoder_1 = Sequential([LSTM(output_dim=input_dim, input_dim=int(latent_dim/2), return_sequences=True)])
 
-    sample = dt.x_test[0, :, :]
-    sample = sample.reshape(1, sample.shape[0], sample.shape[1])
-    code = encoder.predict(sample)
-    code = np.repeat(code, timesteps)
-    code = code.reshape(1, timesteps, latent_dim)
-    reconstructed = decoder.predict(code)
+    autoencoder_1 = Sequential()
+    autoencoder_1.add(encoder_1)
+    autoencoder_1.add(RepeatVector(latent_dim))
+    autoencoder_1.add(decoder_1)
+    autoencoder_1.output_reconstruction = True
 
-    plt.plot(sample[0])
-    plt.plot(reconstructed[0])
+    print("Fitting Second Autoencdoer")
+    ae_model_1 = Sequential()
+    ae_model_1.add(autoencoder_1)
+    ae_model_1.compile(optimizer="rmsprop", loss='mse')
+    ae_model_1.fit(X_train_1, X_train_1, batch_size=batch_size, nb_epoch=nb_epoch, verbose=verbose)
+
+    temp_1 = Sequential()
+    temp_1.add(encoder_1)
+    temp_1.compile(loss='mse', optimizer='adam')
+
+    X_train_2 = temp_1.predict(X_train_1)
+    X_train_2 = X_train_2.reshape(X_train_2.shape[0], X_train_2.shape[1], 1)
+
+    print("\n\nPre-trained Model")
+    sensor_model_ae = Sequential()
+    sensor_model_ae.add(LSTM(output_dim=latent_dim, input_shape=(timesteps, input_dim),
+                             return_sequences=True, weights=encoder_0.get_weights()))
+    sensor_model_ae.add(LSTM(output_dim=int(latent_dim/2), input_shape=(latent_dim, input_dim)))
+    sensor_model_ae.add(Dense(dt.y_train.shape[1], input_dim=int(latent_dim/2), init='zero', activation='softmax'))
+    sensor_model_ae.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    sensor_model_ae.fit(dt.x_train, dt.y_train, nb_epoch=1, batch_size=20, verbose=verbose)
+
+    print("\n\nNon Pre-trained Model")
+    sensor_model = Sequential()
+    sensor_model.add(LSTM(output_dim=latent_dim, input_shape=(timesteps, input_dim), return_sequences=True))
+    sensor_model.add(LSTM(output_dim=int(latent_dim/2), input_shape=(latent_dim, input_dim)))
+    sensor_model.add(Dense(dt.y_train.shape[1], input_dim=latent_dim, init='zero', activation='softmax'))
+    sensor_model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+    sensor_model.fit(dt.x_train, dt.y_train, nb_epoch=1, batch_size=20, verbose=verbose)
+
+    # sample = dt.x_test[1, :, :]
+    # sample = sample.reshape(1, sample.shape[0], sample.shape[1])
+    # code = encoder.predict(sample)
+    # code = np.repeat(code, timesteps)
+    # code = code.reshape(1, timesteps, latent_dim)
+    # reconstructed = decoder.predict(code)
+    #
+    # plt.plot(sample[0])
+    # plt.plot(reconstructed[0])
 
 
     # inputs = Input(shape=(timesteps, input_dim))
