@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn.utils import shuffle
+from keras.preprocessing import sequence
+import chardet
 
 from keras.preprocessing import sequence
 
@@ -13,8 +15,7 @@ class SensorDatasetUCI():
         self.lst_x = []
         self.lst_y = []
         self.activity_dict = {
-            'walk': 0, 'sit': 1, 'bike': 2, 'stairsup': 3,
-            'stairsdown': 4, 'stand': 5
+            'walk': 0, 'sit': 1, 'bike': 2, 'stairs': 3,'stand': 4
 
         }
 
@@ -37,8 +38,8 @@ class SensorDatasetUCI():
                 # Join the two strings in order to form the full filepath.
                 #filepath = os.path.join(root, filename)
                 file_paths.append(filename)  # Add it to the list.
-                activity = filename.split("_")[0]
-                if activity != '.DS':
+                activity = filename.split("_")[1]
+                if activity != 'Store':
                     if activity in activities_files.keys():
                         activities_files[activity].append(filename)
                     else:
@@ -71,22 +72,48 @@ class SensorDatasetUCI():
         print("Train {}.{}".format(self.x_train.shape, self.y_train.shape))
         print("Test {}.{}".format(self.x_test.shape, self.y_test.shape))
 
-    def _load_from_file(self, activities_files, selected_sensors):
+    def _load_from_file(self, activities_files, selected_sensors, chunk_size=150):
         list_x = []
         list_y = []
         sizes = []
         for actvity in activities_files:
             for file in activities_files[actvity]:
-                df = pd.read_csv(self.root_dir+"/"+file, index_col=None)
+                # with open(self.root_dir+"/"+actvity+"/"+file, 'rb') as f:
+                #     result = chardet.detect(f.read())  # or readline if the file is large
+                df = pd.read_csv(self.root_dir+"/"+actvity+"/"+file, sep='\t', index_col=None, encoding="UTF-16LE")
                 df = df[selected_sensors] if len(selected_sensors) > 0 else df
-                values = df.values[0:self.rows_limit]
-                sizes.append(len(values))
-                values = values.reshape((int(self.rows_limit/150), 150, 1))
-                [list_x.append(vl) for vl in values]
-                [list_y.append([self.activity_dict[actvity]]) for _ in values]
+                sizes.append(len(df.values))
+                def greedy_split(arr, n, axis=0):
+                    """Greedily splits an array into n blocks.
 
-        print(min(sizes))
-        return np.array(list_x), self.one_hot(np.array(list_y))
+                    Splits array arr along axis into n blocks such that:
+                        - blocks 1 through n-1 are all the same size
+                        - the sum of all block sizes is equal to arr.shape[axis]
+                        - the last block is nonempty, and not bigger than the other blocks
+
+                    Intuitively, this "greedily" splits the array along the axis by making
+                    the first blocks as big as possible, then putting the leftovers in the
+                    last block.
+                    """
+                    length = arr.shape[axis]
+
+                    # compute the size of each of the first n-1 blocks
+                    block_size = np.ceil(length / float(n))
+
+                    # the indices at which the splits will occur
+                    ix = np.arange(block_size, length, block_size).astype(int)
+
+                    return np.split(arr, ix, axis)
+                #values = np.array_split(df.values, (len(df.values)//chunk_size)+1)
+                values = greedy_split(df.values, (len(df.values)//chunk_size)+1)
+                for vl in values:
+                    while len(vl) < chunk_size:
+                        vl = np.append(vl, np.mean(vl))
+                    list_x.append(vl.flatten())
+                    list_y.append([self.activity_dict[actvity]])
+        list_x = np.reshape(list_x, (len(list_x),150,1))
+        list_y = self.one_hot(np.array(list_y))
+        return list_x, list_y
 
     def one_hot(self, y_):
         # Function to encode output labels from number indexes
@@ -103,7 +130,7 @@ class SensorDatasetUCI():
         split_y = np.array([y[1] for y in split_xy])
         return split_x, split_y
 
-if __name__=='__main__':
-    dt = SensorDatasetUCI("/Users/rafaelpossas/Dev/multimodal/uci")
-    dt.load_dataset(train_size=0.9, split_train=True, group_size=75, step_size=75,
-                    selected_sensors=['x'])
+# if __name__=='__main__':
+#     dt = SensorDatasetUCI("/Users/rafaelpossas/Dev/multimodal/uci_cleaned")
+#     dt.load_dataset(train_size=0.9, split_train=True, group_size=75, step_size=75,
+#                     selected_sensors=['X'])
