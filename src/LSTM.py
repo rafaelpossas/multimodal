@@ -88,17 +88,18 @@ class SensorLSTM():
 
 if __name__=='__main__':
     latent_dim = 50
-    input_dim = 1
+    input_dim = 3
     timesteps = 150
     dropout_rate = 0.3
-    nb_epoch = 20
-    batch_size = 6000
+    nb_epoch = 10
+    batch_size = 2000
     verbose = 1
 
-    dt = SensorDatasetUCI("/Users/rafaelpossas/Dev/multimodal/uci_cleaned")
+    dt = SensorDatasetUCI("/home/rafaelpossas/dev/multimodal_dataset/uci_cleaned")
     scaler = MinMaxScaler()
     lstm = RegressionLSTM(scaler)
-    dt.load_dataset(train_size=0.7, split_train=True, group_size=timesteps, step_size=timesteps, selected_sensors=['X'])
+    dt.load_dataset(train_size=0.7, split_train=True, group_size=timesteps, step_size=timesteps,
+                    selected_sensors=['X', 'Y', 'Z'])
     #x_train, x_test, y_train, y_test = lstm.format_data(dt)
     # train_prediction, test_prediction = lstm.fit_transform(lstm.get_model(), x_train, y_train, x_test,
     #                                                        nb_epoch=10,
@@ -179,8 +180,8 @@ if __name__=='__main__':
                              weights=autoencoder_0.layers[1].get_weights()))
 
     sensor_model_ae.add(Dense(dt.y_train.shape[1], input_dim=int(latent_dim/2), activation='softmax'))
-    sensor_model_ae.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
-    sensor_model_ae.fit(dt.x_train, dt.y_train, nb_epoch=1, batch_size=12000, verbose=verbose)
+    sensor_model_ae.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    sensor_model_ae.fit(dt.x_train, dt.y_train, nb_epoch=5, batch_size=2000, verbose=verbose)
 
     print("\n\nNew Model")
     sensor_model_ae = Sequential()
@@ -191,7 +192,7 @@ if __name__=='__main__':
 
     sensor_model_ae.add(Dense(dt.y_train.shape[1], input_dim=int(latent_dim/2), activation='softmax'))
     sensor_model_ae.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    sensor_model_ae.fit(dt.x_train, dt.y_train, nb_epoch=nb_epoch, batch_size=12000, verbose=verbose)
+    sensor_model_ae.fit(dt.x_train, dt.y_train, nb_epoch=5, batch_size=2000, verbose=verbose)
 
 
 

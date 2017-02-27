@@ -37,9 +37,9 @@ class SensorDatasetUCI():
             for filename in files:
                 # Join the two strings in order to form the full filepath.
                 #filepath = os.path.join(root, filename)
-                file_paths.append(filename)  # Add it to the list.
-                activity = filename.split("_")[1]
-                if activity != 'Store':
+                if(filename !=".DS_Store"):
+                    file_paths.append(filename)  # Add it to the list.
+                    activity = filename.split("_")[1]
                     if activity in activities_files.keys():
                         activities_files[activity].append(filename)
                     else:
@@ -80,7 +80,7 @@ class SensorDatasetUCI():
             for file in activities_files[actvity]:
                 # with open(self.root_dir+"/"+actvity+"/"+file, 'rb') as f:
                 #     result = chardet.detect(f.read())  # or readline if the file is large
-                df = pd.read_csv(self.root_dir+"/"+actvity+"/"+file, sep='\t', index_col=None, encoding="UTF-16LE")
+                df = pd.read_csv(self.root_dir+"/"+actvity+"/"+file, sep='\t', index_col=None, encoding="UTF-16LE", engine="python")
                 df = df[selected_sensors] if len(selected_sensors) > 0 else df
                 sizes.append(len(df.values))
                 def greedy_split(arr, n, axis=0):
@@ -107,11 +107,16 @@ class SensorDatasetUCI():
                 #values = np.array_split(df.values, (len(df.values)//chunk_size)+1)
                 values = greedy_split(df.values, (len(df.values)//chunk_size)+1)
                 for vl in values:
+
                     while len(vl) < chunk_size:
-                        vl = np.append(vl, np.mean(vl))
-                    list_x.append(vl.flatten())
+                        dims = []
+                        for index in range(0, len(selected_sensors)):
+                            dims.append(np.mean(vl[:, index]))
+                        dims = np.reshape(dims, (1, len(selected_sensors)))
+                        vl = np.vstack((vl, dims))
+                    list_x.append(vl)
                     list_y.append([self.activity_dict[actvity]])
-        list_x = np.reshape(list_x, (len(list_x),150,1))
+        list_x = np.reshape(list_x, (len(list_x), chunk_size, len(selected_sensors)))
         list_y = self.one_hot(np.array(list_y))
         return list_x, list_y
 
