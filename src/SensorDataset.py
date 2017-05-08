@@ -46,10 +46,11 @@ class SensorDataset():
                 #filepath = os.path.join(root, filename)
                 file_paths.append(filename)  # Add it to the list.
                 activity = filename[0:5]
-                if activity in activities_files.keys():
-                    activities_files[activity].append(filename)
-                else:
-                    activities_files[activity] = [filename]
+                if activity != '.DS_S':
+                    if activity in activities_files.keys():
+                        activities_files[activity].append(filename)
+                    else:
+                        activities_files[activity] = [filename]
 
 
         return activities_files  # Self-explanatory.

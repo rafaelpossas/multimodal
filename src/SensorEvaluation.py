@@ -69,7 +69,7 @@ targets = ['walking', 'walking upstairs', 'walking downstairs', 'rid.elevator up
                     'running', 'doing push-ups', 'doing sit-ups', 'cycling']
 
 sensor = ['accx','accy','accz']
-grd = ['rmsprop','64','75','0.4']
+grd = ['rmsprop', '64', '75', '0.4']
 
 
 dt.load_dataset(selected_sensors=sensor,
@@ -81,7 +81,8 @@ model = lstm.get_model(input_shape=(dt.x_train.shape[1], dt.x_train.shape[2]),
                        output_shape=dt.y_train.shape[1], layer_size=int(grd[1]),
                        optimizer=grd[0], dropout=float(grd[3]))
 
-model.load_weights("./src/models/65.00_accx_accy_accz_rmsprop_64_75_0.4.hdf5")
+model.fit(dt.x_train, dt.y_train, nb_epoch=25, batch_size=20)
+#model.load_weights("./src/models/65.00_accx_accy_accz_rmsprop_64_75_0.4.hdf5")
 #Callbacks
 #filepath = "./models/{val_acc:.2f}_"+'_'.join(sensor)+".hdf5"
 #checkpointer = ModelCheckpoint(filepath=filepath, verbose=0, save_best_only=True)
