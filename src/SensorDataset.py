@@ -109,3 +109,8 @@ class SensorDataset():
         split_y = np.array([y[1] for y in split_xy])
         return split_x, split_y
 
+    @staticmethod
+    def unison_shuffled_copies(a, b):
+        assert len(a) == len(b)
+        p = np.random.permutation(len(a))
+        return a[p], b[p]

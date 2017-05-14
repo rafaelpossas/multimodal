@@ -72,7 +72,7 @@ class SensorDatasetUCI():
         print("Test {}.{}".format(self.x_test.shape, self.y_test.shape))
 
     def _load_from_file(self, activities_files, chunk_size=150, step_size=150):
-        def greedy_split(arr, n, axis=0):
+        def greedy_split(arr, axis=0):
             """Greedily splits an array into n blocks.
 
             Splits array arr along axis into n blocks such that:
@@ -114,7 +114,7 @@ class SensorDatasetUCI():
                 sizes.append(len(df.values))
 
                 #values = np.array_split(df.values, (len(df.values)//chunk_size)+1)
-                values = greedy_split(df.values, (len(df.values)//chunk_size)+1)
+                values = greedy_split(df.values)
                 for vl in values:
 
                     while len(vl) < chunk_size:
