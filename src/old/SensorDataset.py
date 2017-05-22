@@ -59,7 +59,7 @@ class SensorDataset():
                   group_size=50, step_size=0, selected_sensors=[]):
 
         act = self.get_filepaths(self.root_dir)
-        self.lst_x, self.lst_y = self._load_from_file(act, selected_sensors)
+        self.lst_x, self.lst_y = self._load_all_files(act, selected_sensors)
         self.lst_x, self.lst_y = shuffle(self.lst_x, self.lst_y, random_state=0)
 
         train_size = int(len(self.lst_x)*train_size)
@@ -79,7 +79,20 @@ class SensorDataset():
         print("Train {}.{}".format(self.x_train.shape, self.y_train.shape))
         print("Test {}.{}".format(self.x_test.shape, self.y_test.shape))
 
-    def _load_from_file(self, activities_files, selected_sensors):
+    def _load_from_file(self, actvity, activities_files, selected_sensors, activity_dict):
+        list_x = []
+        list_y = []
+        for file in activities_files:
+            df = pd.read_csv(self.root_dir+"/"+file, index_col=None, header=None)
+            df.columns = self.sensor_columns
+            df = df[selected_sensors] if len(selected_sensors) > 0 else df
+            sensor = sequence.pad_sequences(df.values.T, maxlen=150, dtype='float32')
+            list_x.append(sensor.T)
+            list_y.append([activity_dict[actvity][0]])
+
+        return np.array(list_x), self.one_hot(np.array(list_y))
+
+    def _load_all_files(self, activities_files, selected_sensors):
         list_x = []
         list_y = []
 

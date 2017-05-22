@@ -8,13 +8,14 @@ Created on Mon Jan  9 11:34:29 2017
 @author: rafaelpossas
 """
 
-from src.LSTM import SensorLSTM
-from src.SensorDataset import SensorDataset
-from sklearn.preprocessing import MinMaxScaler
-from keras.callbacks import EarlyStopping
-from sklearn.metrics import classification_report, confusion_matrix
-import numpy as np
 import matplotlib as plt
+import numpy as np
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import MinMaxScaler
+
+from old.SensorDataset import SensorDataset
+from src.LSTM import SensorLSTM
+
 
 def plot_confusion_matrix(cm, classes,
                           normalize=False,

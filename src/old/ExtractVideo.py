@@ -6,11 +6,13 @@ for training and testing later.
 import glob
 import os
 import os.path
-import cv2
 from subprocess import call
+
+import cv2
 import h5py
 import numpy as np
-from sklearn.utils import shuffle
+
+from old.SensorDataset import SensorDataset
 
 activity_dict = {
     'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
@@ -42,51 +44,92 @@ def greedy_split(arr, chunk_size, step_size, axis=0):
 
     return [arr[i:i + int(chunk_size), :] for i in ix]
 
-def create_dataset(chunk_size, step_size):
-    folder = '../multimodal_dataset/video_images/'
-    x = []
-    y = []
+
+def create_dataset(chunk_size, step_size, sensor_total_samples=150, image_total_samples=450):
+
+    folder = '../multimodal_dataset/video/images/test/'
+    sensors = ['accx', 'accy', 'accz']
+    sensor_dt = SensorDataset('../multimodal_dataset/sensor/')
+
+    max_samples = max([sensor_total_samples, image_total_samples])
+    min_samples = min([sensor_total_samples, image_total_samples])
+
+    min_max_raio = max_samples / min_samples
+
+    chunk_size_sensor = chunk_size if sensor_total_samples > image_total_samples else chunk_size / min_max_raio
+    chunk_size_image = chunk_size if image_total_samples > sensor_total_samples else chunk_size / min_max_raio
+
+    step_size_sensor = step_size if sensor_total_samples > image_total_samples else step_size / min_max_raio
+    step_size_image = step_size if image_total_samples > sensor_total_samples else step_size / min_max_raio
+
+    if not float(chunk_size_sensor).is_integer() or not float(chunk_size_image).is_integer():
+        raise Exception("Both Chunk sizes should be a whole number")
+
+    if not float(step_size_sensor).is_integer() or not float(step_size_image).is_integer():
+        raise Exception("Both Step sizes should be a whole number")
+
+    x_img = []
+    y_img = []
+    x_sensor = []
+    y_sensor = []
     for path, subdirs, files in os.walk(folder):
         if len(subdirs) > 0:
             print("Current Path: " + path)
-        for dir in subdirs:
+        for seq in subdirs:
             cur_class = []
             cur_image = []
 
-            files = glob.glob(path+"/" + dir + '/*.jpg')
+            files = glob.glob(path+"/" + seq + '/*.jpg')
 
             if len(files) > 0:
-                print("Creating images for: "+dir)
+                print("Creating images for: "+seq)
 
             for ix, name in enumerate(files):
-                if ix < 450:
+                if ix < image_total_samples:
                     cur_image = cv2.resize(cv2.imread(name), (224, 224))
                     cur_class.append(cur_image)
 
-            while 0 < len(cur_class) < 450:
+            while 0 < len(cur_class) < image_total_samples:
                 cur_class.append(cur_image)
 
-            cur_class = greedy_split(np.array(cur_class), chunk_size=chunk_size, step_size=step_size)
-
             if len(cur_class) > 0:
-                for cur_frame in cur_class:
-                    x.append(cur_frame)
-                    y.append(activity_dict[path.split('/')[-1]][0])
+                act = path.split("/")[-1]
+                cur_class_arr = np.array(cur_class)
 
-    x, y = shuffle(x, y)
+                cur_class = greedy_split(cur_class_arr,
+                                         chunk_size=chunk_size_image, step_size=step_size_image)
+                csv_file = act + seq + '.csv'
+                sensor_x, sensor_y = sensor_dt._load_from_file(actvity=act, activities_files=[csv_file],
+                                                               selected_sensors=sensors, activity_dict=activity_dict)
 
-    with h5py.File("activity_frames.hdf5", "w") as hf:
-        hf.create_dataset("x", data=x)
-        hf.create_dataset("y", data=y)
+                sensor_x, sensor_y = sensor_dt.split_windows(int(chunk_size_sensor), int(step_size_sensor), sensor_x, sensor_y)
+
+                for cur_frame, cur_sensor_x, cur_sensor_y in zip(cur_class, sensor_x, sensor_y):
+                    x_img.append(cur_frame)
+                    y_img.append(activity_dict[path.split('/')[-1]][0])
+                    x_sensor.append(cur_sensor_x)
+                    y_sensor.append(cur_sensor_y[0])
+
+                print(np.array(x_img).shape)
+                print(np.array(y_img).shape)
+                print(np.array(x_sensor).shape)
+                print(np.array(y_sensor).shape)
+
+    #x, y = shuffle(x, y)
+
+    with h5py.File("all_test_activity_frames.hdf5", "w") as hf:
+        hf.create_dataset("x_img", data=x_img)
+        hf.create_dataset("y_img", data=y_img)
+        hf.create_dataset("x_sns", data=x_sensor)
+        hf.create_dataset("y_sns", data=y_sensor)
 
         # if len(x) > 0:
         #     print(min([len(p) for p in x]))
         # x = []
         # y = []
-    return x, y
 
 
-def extract_files():
+def extract_files(test_seqs=['seq09', 'seq10']):
     """After we have all of our videos split between train and test, and
     all nested within folders representing their classes, we need to
     make a data file that we can reference when training our RNN(s).
@@ -115,12 +158,17 @@ def extract_files():
 
                 # Only extract if we haven't done it yet. Otherwise, just get
                 # the info.
-                cur_class_dir = video_dir + class_label + '/'
+                if seq in test_seqs:
+                    prefix = "test/"
+                else:
+                    prefix = "train/"
+
+                cur_class_dir = video_dir + "images/"+ prefix + class_label + '/'
                 if not bool(os.path.exists(cur_class_dir+'/'+seq)):
                     os.makedirs(cur_class_dir+'/'+seq)
 
                 src = video_dir + '/' + filename
-                dest = cur_class_dir + '/' + seq + '/' + class_label+'_'+seq+'_%04d.jpg'
+                dest = cur_class_dir + seq + '/' + class_label+'_'+seq+'_%04d.jpg'
                 call(["ffmpeg", "-i", src, dest])
 
                 # Now get how many frames it is.
@@ -148,10 +196,9 @@ def get_video_parts(video_path):
     """Given a full path to a video, return its parts."""
     parts = video_path.split('/')
     filename = parts[-1]
-    dir = '/'.join(parts[0:-1]) + '/'
     class_label = filename[0:5]
     seq = filename[5:10]
-
+    dir = '/'.join(parts[0:-1]) + '/'
     return filename, class_label, seq, dir
 
 
@@ -161,7 +208,8 @@ def main():
     can use as our data input file. It can have format:
     [train|test], class, filename, nb frames
     """
-    create_dataset(10, 10)
+    create_dataset(15, 15)
+    #extract_files()
 
 if __name__ == '__main__':
     main()
