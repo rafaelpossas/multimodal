@@ -8,7 +8,7 @@ from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Dropout, RepeatVector
 from src.Utils import *
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.callbacks import EarlyStopping, ModelCheckpoint,ReduceLROnPlateau
 
 
 class RegressionLSTM:
