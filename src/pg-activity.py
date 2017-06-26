@@ -17,8 +17,11 @@ class PGAgent:
         self.gradients = []
         self.rewards = []
         self.probs = []
+        self.steps = []
+        self.true_preds = []
         self.model = self._build_model()
         self.model.summary()
+
 
     def _build_model(self):
         model = Sequential()
@@ -64,18 +67,18 @@ class PGAgent:
 
     def train(self):
         gradients = np.vstack(self.gradients)
-        rewards = np.vstack(self.rewards)
+        rewards = np.vstack(self.rewards).astype(np.float)
         rewards = self.discount_rewards(rewards)
         #standardize the rewards to be unit normal (helps control the gradient estimator variance
         rewards_mean = np.mean(rewards)
         rewards_std = np.std(rewards)
-        rewards -= float(rewards_mean)
+        rewards -= rewards_mean
         rewards /= rewards_std if rewards_std != 0 else 1
         gradients *= rewards
         X = np.squeeze(np.vstack([self.states]))
         Y = self.probs + self.learning_rate * np.squeeze(np.vstack([gradients]))
         self.model.train_on_batch(X, Y)
-        self.states, self.probs, self.gradients, self.rewards = [], [], [], []
+        self.states, self.probs, self.gradients, self.rewards,self.steps, self.true_preds = [], [], [], [], [], []
 
     def load(self, name):
         self.model.load_weights(name)
@@ -118,6 +121,11 @@ def train_policy():
                               split=False)
     load_weights = False
     all_scores = []
+    all_steps = []
+    all_rewards = []
+    all_true_preds = []
+    moving_average = []
+    ep_accuracy = []
     score = 0
     episode = 0
     state = env.reset()
@@ -133,28 +141,47 @@ def train_policy():
     best_acc = 0
     while True:
         action, prob = agent.act(state)
-        state, reward, done = env.step(action, verbose=False)
+        agent.steps.append(action)
+        state, reward, done, is_true_pred = env.step(action, verbose=False)
+        agent.true_preds.append(is_true_pred)
         score += reward
         agent.remember(state, action, prob, reward)
 
         if done:
             episode += 1
             print('Action probability average: ', (np.average(agent.probs, axis=0)))
+            sensor_steps = np.where(np.array(agent.steps) == 0)[0]
+            vision_steps = np.where(np.array(agent.steps) == 1)[0]
+            all_steps.append([len(sensor_steps), len(vision_steps)])
+            all_rewards.append([np.array(agent.rewards)[sensor_steps].sum(),
+                                np.array(agent.rewards)[vision_steps].sum()])
+            all_true_preds.append([np.array(agent.true_preds).sum(), len(agent.true_preds)])
             agent.train()
             all_scores.append(score)
-            acc = evaluate_policy()
-            print("Current accuracy: ", (acc))
-            print('Episode: %d - Reward: %f. - Avg Score: %f.' % (episode, score, sum(all_scores)/float(len(all_scores))))
+            score_mean = sum(all_scores)/float(len(all_scores))
+            moving_average.append(score_mean)
+            print('Episode: %d - Reward: %f. - Avg Score: %f.' % (episode, score, score_mean))
             score = 0
             state = env.reset()
             if episode > 1 and episode % 20 == 0:
+
+                if episode == 20:
+                    acc = evaluate_policy(agent_weights=None)
+                else:
+                    #acc = evaluate_policy()
+                    acc = 0
+                ep_accuracy.append(acc)
+                print("Current accuracy: ", (acc))
                 if acc > best_acc:
                     agent.save('activity.h5')
                     best_acc = acc
-                with h5py.File('scores.hdf5', "w") as hf:
+                with h5py.File('stats.hdf5', "w") as hf:
                     hf.create_dataset("scores", data=all_scores)
-
-
+                    hf.create_dataset("moving_average", data=moving_average)
+                    hf.create_dataset('batch_acc', data=ep_accuracy)
+                    #hf.create_dataset("steps", data=all_steps, dtype=dt)
+                    #hf.create_dataset("rewards", data=np.array(all_rewards))
+                    # hf.create_dataset("true_preds", data=all_true_preds)
 
 
 if __name__ == "__main__":

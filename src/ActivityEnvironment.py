@@ -26,8 +26,8 @@ class ActivityEnvironment(object):
     current_y_activity_sns_buffer = q.Queue()
     current_y_activity_img_buffer = q.Queue()
 
-    reward_right_pred = 0.5
-    reward_wrong_pred = 0
+    reward_right_pred = 1
+    reward_wrong_pred = -1
 
     current_consumption = 0
 
@@ -119,18 +119,20 @@ class ActivityEnvironment(object):
             yield x, y
 
     def calculate_reward(self, real, pred_sns, pred_img, sensor_type):
-        base_reward = self.reward_wrong_pred
-        if pred_sns == pred_img and (pred_sns == real or pred_img == real):
-            base_reward = self.reward_right_pred
-        if pred_sns != pred_img and ((pred_sns == real and pred_img != real) or (pred_sns != real and pred_img == real)):
-            base_reward = self.reward_right_pred * 3
 
-        total_reward = 0
         if sensor_type == self.SENSOR:
-            total_reward = base_reward - self.sensor_consumption_per_step
+            if pred_sns == real and pred_img != real:
+                total_reward = self.reward_right_pred
+            if pred_sns != real and pred_img == real:
+                total_reward = self.reward_wrong_pred
         if sensor_type == self.CAMERA:
-            total_reward = base_reward - self.vision_consumption_per_step
-
+            if pred_img == real and pred_sns != real:
+                total_reward = self.reward_right_pred
+            if pred_img != real and pred_sns == real:
+                total_reward = self.reward_wrong_pred
+        if (pred_sns != real and pred_img != real) \
+                or (pred_sns == real and pred_img == real):
+            total_reward = 0
         return total_reward
     def read_sensors(self, index=None):
         x_sns, y_sns = next(self.sensor_generator(index=index))
@@ -169,10 +171,12 @@ class ActivityEnvironment(object):
         if action == self.SENSOR:
             reward = self.calculate_reward(self.cur_label, pred_sns, pred_img, self.SENSOR)
             self.current_consumption += self.sensor_consumption_per_step
+            is_true_pred = True if pred_sns == self.cur_label else False
 
         if action == self.CAMERA:
             reward = self.calculate_reward(self.cur_label, pred_sns, pred_img, self.CAMERA)
             self.current_consumption += self.vision_consumption_per_step
+            is_true_pred = True if pred_img == self.cur_label else False
 
         if verbose:
             print('Current Consumption: %f. - Action: %d' % (self.current_consumption, action))
@@ -187,7 +191,7 @@ class ActivityEnvironment(object):
         # if model == 'vision':
         #     raise NotImplementedError
 
-        return state, reward, done
+        return state, reward, done, is_true_pred
 #
 # activity_environment = ActivityEnvironment(dataset_file='multimodal_full_test.hdf5',
 #                                            sensor_model_weights='sensor_model.hdf5',
