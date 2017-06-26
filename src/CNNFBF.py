@@ -7,8 +7,6 @@ import numpy as np
 import h5py
 import random
 
-
-
 class CNNFBF(object):
 
     def __init__(self, train_file='train_activity_frames.hdf5', test_file='test_activity_frames.hdf5', ):
@@ -97,7 +95,6 @@ class CNNFBF(object):
         model.summary()
         return model
 
-
     def get_top_layer_model(self, base_model):
         """Used to train just the top layers of the model."""
         # first: train only the top layers (which were randomly initialized)
@@ -109,7 +106,6 @@ class CNNFBF(object):
         base_model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
         return base_model
-
 
     def get_mid_layer_model(self, model):
         """After we fine-tune the dense layers, train deeper."""
@@ -129,19 +125,21 @@ class CNNFBF(object):
 
         return model
 
-
     def image_generator(self,file, batch_size):
+        current_index = 0
+        total_size = file['x_img'].shape[0]
         while True:
-            total_size = file['x_img'].shape[0]
-            index = random.sample(range(0, total_size), batch_size)
-            x = file['x_img'][sorted(index)]
-            y = file['y_img'][sorted(index)]
+            if current_index >= total_size:
+                current_index = 0
+            index = range(current_index, current_index+batch_size)
+            x = file['x_img'][index]
+            y = file['y_img'][index]
             num_frames_per_sample = x.shape[1]
             x = x.reshape(x.shape[0]*x.shape[1], x.shape[2], x.shape[3], x.shape[4])
             y = np.eye(20)[np.repeat(y, num_frames_per_sample)]
             x = x.astype("float") / 255.0
+            current_index += batch_size
             yield x, y
-
 
     def fit(self, model, nb_epoch, generator, callbacks=[]):
         model.fit_generator(
@@ -152,7 +150,6 @@ class CNNFBF(object):
             epochs=nb_epoch,
             callbacks=callbacks)
         return model
-
 
     def train_model(self, weights_file):
         model = self.get_training_model()

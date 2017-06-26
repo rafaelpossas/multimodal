@@ -33,8 +33,6 @@ class MultimodalDataset(object):
                                'magx', 'magy', 'magz',
                                'rotx', 'roty', 'rotz', 'rote']
 
-
-
     def get_sensor_filepaths(self, directory):
         """
         This function will generate the file names in a directory

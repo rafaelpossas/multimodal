@@ -83,15 +83,15 @@ def train_model():
 
 def create_dataset(sensors):
     dataset = MultimodalDataset()
-    dataset.load_multimodal_dataset(15, 15, '../multimodal_dataset/video/images/train',
+    dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/train',
                                     sensor_root='../multimodal_dataset/sensor/',
                                     sensors=sensors,
-                                     output_file='multimodal_train.hdf5')
+                                     output_file='multimodal_full_train.hdf5')
 
-    dataset.load_multimodal_dataset(15, 15, '../multimodal_dataset/video/images/test',
+    dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/test',
                                     sensor_root='../multimodal_dataset/sensor/',
                                     sensors=sensors,
-                                     output_file='multimodal_test.hdf5')
+                                     output_file='multimodal_full_test.hdf5')
 if __name__=='__main__':
-    #create_dataset(['grax','gray','graz','gyrx','gyry','gyrz','lacx','lacy','lacz'])
-    train_model()
+    create_dataset(['grax','gray','graz','gyrx','gyry','gyrz','lacx','lacy','lacz'])
+    #train_model()
