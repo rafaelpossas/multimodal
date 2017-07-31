@@ -100,3 +100,4 @@ src/data/
 uci_cleaned/
 sensor/
 checkpoints/
+.idea/
