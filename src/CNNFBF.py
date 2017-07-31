@@ -125,7 +125,7 @@ class CNNFBF(object):
 
         return model
 
-    def image_generator(self,file, batch_size):
+    def image_generator(self, file, batch_size):
         current_index = 0
         total_size = file['x_img'].shape[0]
         while True:
@@ -158,13 +158,13 @@ class CNNFBF(object):
             print("Loading network from ImageNet weights.")
             # Get and train the top layers.
             model = self.get_top_layer_model(model)
-            model = self.fit(model, 10, self.multimodal_generator)
+            model = self.fit(model, 10, self.image_generator)
         else:
             print("Loading saved model: %s." % weights_file)
             model.load_weights(weights_file)
 
         # Get and train the mid layers.
         model = self.get_mid_layer_model(model)
-        model = self.fit(model, 1000, self.multimodal_generator,
+        model = self.fit(model, 1000, self.image_generator,
                          [self.checkpointer, self.early_stopper, self.tensorboard])
         return model

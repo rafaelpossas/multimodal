@@ -31,6 +31,8 @@ class ActivityEnvironment(object):
 
     current_consumption = 0
 
+    total_steps = 0
+
     def __init__(self, dataset_file=None, sensor_model_weights=None,vision_model_weights=None,
                  chunk_size=15, step_size=15, split=True):
 
@@ -38,11 +40,11 @@ class ActivityEnvironment(object):
         self.multimodal_dataset = MultimodalDataset()
         self.vision_agent = None
 
-
         self.sns_x = self.dataset_file['x_sns'][:]
         self.sns_y = self.dataset_file['y_sns'][:]
         self.onehot_y = np.eye(20)[self.sns_y]
         self.total_size = len(self.sns_x)
+        self.current_index = 0
 
         self.batch_size_sns = int(self.num_sns_per_activity / self.sns_x.shape[1])
         self.batch_size_img = int(self.num_img_per_activity / self.dataset_file['x_img'].shape[1])
@@ -125,15 +127,22 @@ class ActivityEnvironment(object):
                 total_reward = self.reward_right_pred
             if pred_sns != real and pred_img == real:
                 total_reward = self.reward_wrong_pred
+            if pred_sns == real and pred_img == real:
+                total_reward = 1
+
         if sensor_type == self.CAMERA:
             if pred_img == real and pred_sns != real:
                 total_reward = self.reward_right_pred
             if pred_img != real and pred_sns == real:
                 total_reward = self.reward_wrong_pred
-        if (pred_sns != real and pred_img != real) \
-                or (pred_sns == real and pred_img == real):
+            if pred_img == real and pred_sns == real:
+                total_reward = 0.8
+
+        if pred_sns != real and pred_img != real:
             total_reward = 0
+
         return total_reward
+
     def read_sensors(self, index=None):
         x_sns, y_sns = next(self.sensor_generator(index=index))
         x_sns, y_sns = self.multimodal_dataset.split_windows(self.chunk_size_sensor, self.step_size_sensor, x_sns,
@@ -154,7 +163,13 @@ class ActivityEnvironment(object):
 
         if self.current_x_activity_sns_buffer.empty() or self.current_x_activity_img_buffer.empty():
             if index is None:
-                index = self.get_random_index(self.total_size, 1)
+                #index = self.get_random_index(self.total_size, 1)
+                index = [self.current_index]
+                if self.current_index < self.total_size:
+                    self.current_index += 1
+                else:
+                    self.current_index = 0
+
             self.read_sensors(index)
 
         self.cur_sns_input = self.current_x_activity_sns_buffer.get()
@@ -185,11 +200,6 @@ class ActivityEnvironment(object):
         self.get_next_from_buffer()
         #state = self.sensor_agent.get_state_for_input(self.cur_sns_input)
         state = self.cur_sns_input
-        # if model == 'sensor':
-        #     prediction = self.sensor_agent.predict(input)
-        #
-        # if model == 'vision':
-        #     raise NotImplementedError
 
         return state, reward, done, is_true_pred
 #
@@ -213,3 +223,11 @@ class ActivityEnvironment(object):
 # print(sensor_agent.get_state_for_input(sensor_agent.sns_x[0]))
 #
 # sess.close()
+
+if __name__ == "__main__":
+    env = ActivityEnvironment(dataset_file='multimodal_full_test.hdf5',
+                              sensor_model_weights='sensor_model.hdf5',
+                              vision_model_weights='checkpoints/inception.029-1.08.hdf5',
+                              split=False)
+    env.sensor_agent.model.save('sensor_weights_and_model.hdf5')
+    env.vision_agent.model.save('vision_weights_and_model.hdf5')

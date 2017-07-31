@@ -5,7 +5,9 @@ from keras.layers import Dense, Reshape, Flatten, LSTM
 from keras.optimizers import Adam
 from ActivityEnvironment import ActivityEnvironment
 import h5py
-
+import logging
+import datetime
+import sys
 class PGAgent:
 
     def __init__(self, state_size, action_size):
@@ -68,7 +70,7 @@ class PGAgent:
     def train(self):
         gradients = np.vstack(self.gradients)
         rewards = np.vstack(self.rewards).astype(np.float)
-        rewards = self.discount_rewards(rewards)
+        #rewards = self.discount_rewards(rewards)
         #standardize the rewards to be unit normal (helps control the gradient estimator variance
         rewards_mean = np.mean(rewards)
         rewards_std = np.std(rewards)
@@ -86,6 +88,7 @@ class PGAgent:
     def save(self, name):
         self.model.save_weights(name)
 
+
 def evaluate_policy(dataset_file="multimodal_full_test.hdf5", agent_weights='activity.h5', state_size=5, action_size=2):
     env = ActivityEnvironment(dataset_file=dataset_file,
                               sensor_model_weights='sensor_model.hdf5',
@@ -96,6 +99,7 @@ def evaluate_policy(dataset_file="multimodal_full_test.hdf5", agent_weights='act
         agent.model.load_weights(agent_weights)
     preds = []
     true_y = []
+    steps = [0, 0]
     for i in range(0, env.total_size):
         env.read_sensors([i])
         while not env.current_x_activity_sns_buffer.empty():
@@ -104,28 +108,43 @@ def evaluate_policy(dataset_file="multimodal_full_test.hdf5", agent_weights='act
             y = env.current_y_activity_sns_buffer.get()
             state = sns_x
             action, prob = agent.act(state, stochastic=False)
+
             if action == env.SENSOR:
                 pred = env.sensor_agent.predict(sns_x)
+                steps[0] += 1
             if action == env.CAMERA:
                 pred = env.vision_agent.predict(img_x)
+                steps[1] += 1
+
             preds.append(pred)
             true_y.append(y)
             true_preds = np.array(preds) == np.array(true_y)
 
+    print("Steps: ", steps)
     return ((true_preds.sum()/len(true_y))*100)
 
 def train_policy():
-    env = ActivityEnvironment(dataset_file='multimodal_full_train.hdf5',
+    env = ActivityEnvironment(dataset_file='multimodal_full_test.hdf5',
                               sensor_model_weights='sensor_model.hdf5',
                               vision_model_weights='checkpoints/inception.029-1.08.hdf5',
                               split=False)
+    current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    # create a file handler
+    handler = logging.FileHandler('train_policy_'+current_time+'.log')
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
     load_weights = False
     all_scores = []
     all_steps = []
     all_rewards = []
     all_true_preds = []
     moving_average = []
-    ep_accuracy = []
+    all_acc = []
     score = 0
     episode = 0
     state = env.reset()
@@ -137,7 +156,7 @@ def train_policy():
     if load_weights:
         agent.model.load_weights('activity.h5')
         all_scores = h5py.File('scores.hdf5')['scores'][:].tolist()
-        print('Last Average score: %f.' % (sum(all_scores) / float(len(all_scores))))
+        logger.info('Last Average score: %.2f' % (sum(all_scores) / float(len(all_scores))))
     best_acc = 0
     while True:
         action, prob = agent.act(state)
@@ -149,40 +168,60 @@ def train_policy():
 
         if done:
             episode += 1
-            print('Action probability average: ', (np.average(agent.probs, axis=0)))
+
+            all_scores.append(score)
+
             sensor_steps = np.where(np.array(agent.steps) == 0)[0]
             vision_steps = np.where(np.array(agent.steps) == 1)[0]
             all_steps.append([len(sensor_steps), len(vision_steps)])
+
+            step_mean = np.sum(np.sum(all_steps, axis=1), axis=0)/float(len(all_steps))
+
             all_rewards.append([np.array(agent.rewards)[sensor_steps].sum(),
                                 np.array(agent.rewards)[vision_steps].sum()])
             all_true_preds.append([np.array(agent.true_preds).sum(), len(agent.true_preds)])
-            agent.train()
-            all_scores.append(score)
+
             score_mean = sum(all_scores)/float(len(all_scores))
-            moving_average.append(score_mean)
-            print('Episode: %d - Reward: %f. - Avg Score: %f.' % (episode, score, score_mean))
+            action_avg = np.average(agent.probs, axis=0)
+
+            acc = np.array(agent.true_preds).sum() / float(len(agent.true_preds))
+            all_acc.append(acc)
+            acc_mean = sum(all_acc) / float(len(all_acc))
+
+            moving_average.append([score_mean, acc_mean, step_mean])
+
+            logger.info('Episode: %d - Reward: %.2f - Avg Score: %.2f - Accuracy: %.2f'
+                        % (episode, score, score_mean, acc_mean))
+            logger.info('Number of steps - Sensor: %d, Vision: %d, Mean: %.2f'
+                        % (len(sensor_steps), len(vision_steps), step_mean))
+            logger.info('Action probability average - Sensor: %.2f Vision %.2f' % (action_avg[0], action_avg[1]))
+
+            agent.train()
+
             score = 0
             state = env.reset()
             if episode > 1 and episode % 20 == 0:
 
-                if episode == 20:
-                    acc = evaluate_policy(agent_weights=None)
-                else:
-                    #acc = evaluate_policy()
-                    acc = 0
-                ep_accuracy.append(acc)
-                print("Current accuracy: ", (acc))
+                # if episode == 20:
+                #     acc = evaluate_policy(agent_weights=None)
+                # else:
+                #     acc = evaluate_policy()
+
                 if acc > best_acc:
                     agent.save('activity.h5')
                     best_acc = acc
+
                 with h5py.File('stats.hdf5', "w") as hf:
                     hf.create_dataset("scores", data=all_scores)
                     hf.create_dataset("moving_average", data=moving_average)
-                    hf.create_dataset('batch_acc', data=ep_accuracy)
-                    #hf.create_dataset("steps", data=all_steps, dtype=dt)
-                    #hf.create_dataset("rewards", data=np.array(all_rewards))
-                    # hf.create_dataset("true_preds", data=all_true_preds)
+                    hf.create_dataset('batch_acc', data=all_acc)
+                    hf.create_dataset("steps", data=all_steps)
+                    hf.create_dataset("rewards", data=np.array(all_rewards))
+                    hf.create_dataset("true_preds", data=all_true_preds)
 
 
 if __name__ == "__main__":
-    train_policy()
+    if len(sys.argv) == 1:
+        train_policy()
+    if len(sys.argv) > 1 and sys.argv[1] == 'evaluate':
+        print(evaluate_policy())

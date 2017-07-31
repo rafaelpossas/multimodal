@@ -2,8 +2,72 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="62daf1e3-6835-4d60-be7c-0e3dafcdcc77" name="Default" comment="">
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/EnsembleAgent.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/LSTM_Test.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/MultimodalDataset_Test.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/PredictiveAgent.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/SensorEvaluation.ipynb" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/SensorEvaluation.py" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/Vision_Sensor_Comparison.ipynb" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/10.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/10.00_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_accx_accy_accz_grax_gray_graz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_grax_gray_graz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_accx_accy_accz_grax_gray_graz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_grax_gray_graz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_gyrx_gyry_gyrz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/25.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/27.50_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/30.00_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/40.00_grax_gray_graz_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/40.00_grax_gray_graz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/47.50_accx_accy_accz_grax_gray_graz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/47.50_grax_gray_graz_gyrx_gyry_gyrz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/47.50_grax_gray_graz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_accx_accy_accz_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/52.50_accx_accy_accz_grax_gray_graz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/52.50_gyrx_gyry_gyrz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/52.50_gyrx_gyry_gyrz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/55.00_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/55.00_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_grax_gray_graz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_grax_gray_graz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Autoencoders.py" afterPath="$PROJECT_DIR$/src/Autoencoders.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/ActivityEnvironment.py" afterPath="$PROJECT_DIR$/src/ActivityEnvironment.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/CNNFBF.py" afterPath="$PROJECT_DIR$/src/CNNFBF.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/pg-activity.py" afterPath="$PROJECT_DIR$/src/pg-activity.py" />
     </list>
     <ignored path="multimodal_dataset.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -16,45 +80,52 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/multimodal_dataset$SensorFeatureExtractor.coverage" NAME="SensorFeatureExtractor Coverage Results" MODIFIED="1483058325750" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/sheila" />
     <SUITE FILE_PATH="coverage/multimodal$Autoencoders.coverage" NAME="Autoencoders Coverage Results" MODIFIED="1484633242828" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
-    <SUITE FILE_PATH="coverage/multimodal$IMDB.coverage" NAME="IMDB Coverage Results" MODIFIED="1483485415194" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/multimodal$ActivityEnvironment.coverage" NAME="ActivityEnvironment Coverage Results" MODIFIED="1501212959280" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/multimodal_dataset$SensorDataset.coverage" NAME="SensorDataset Coverage Results" MODIFIED="1483067989851" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
-    <SUITE FILE_PATH="coverage/multimodal$LSTM.coverage" NAME="LSTM Coverage Results" MODIFIED="1484096209455" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
-    <SUITE FILE_PATH="coverage/multimodal$GridSearch.coverage" NAME="GridSearch Coverage Results" MODIFIED="1483595053747" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
-    <SUITE FILE_PATH="coverage/multimodal$SensorDataset.coverage" NAME="SensorDataset Coverage Results" MODIFIED="1483581162135" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
-    <SUITE FILE_PATH="coverage/multimodal$SensorEvaluation.coverage" NAME="SensorEvaluation Coverage Results" MODIFIED="1483940449887" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
     <SUITE FILE_PATH="coverage/multimodal_dataset$arSensorsClassification.coverage" NAME="arSensorsClassification Coverage Results" MODIFIED="1483060267718" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/sheila" />
+    <SUITE FILE_PATH="coverage/multimodal$GridSearch.coverage" NAME="GridSearch Coverage Results" MODIFIED="1483595053747" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/multimodal_dataset$SensorFeatureExtractor.coverage" NAME="SensorFeatureExtractor Coverage Results" MODIFIED="1483058325750" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/sheila" />
+    <SUITE FILE_PATH="coverage/multimodal$pg_activity.coverage" NAME="pg-activity Coverage Results" MODIFIED="1499400347059" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/multimodal$SensorDataset.coverage" NAME="SensorDataset Coverage Results" MODIFIED="1483581162135" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/multimodal$LSTM.coverage" NAME="LSTM Coverage Results" MODIFIED="1484096209455" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/multimodal$SensorEvaluation.coverage" NAME="SensorEvaluation Coverage Results" MODIFIED="1483940449887" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
+    <SUITE FILE_PATH="coverage/multimodal$IMDB.coverage" NAME="IMDB Coverage Results" MODIFIED="1483485415194" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src" />
   </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_TABLE_DETAILS" value="true" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FavoritesManager">
     <favorites_list name="multimodal_dataset" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Autoencoders.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/Autoencoders.py">
+    <leaf>
+      <file leaf-file-name="SensorEvaluation.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/old/SensorEvaluation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="36">
-              <caret line="128" column="5" lean-forward="false" selection-start-line="128" selection-start-column="5" selection-end-line="128" selection-end-column="5" />
-              <folding>
-                <element signature="e#0#49#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="773">
+              <caret line="95" column="32" lean-forward="false" selection-start-line="95" selection-start-column="32" selection-end-line="95" selection-end-column="32" />
+              <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="LSTM.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/LSTM.py">
+      <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="389">
-              <caret line="141" column="45" lean-forward="true" selection-start-line="141" selection-start-column="45" selection-end-line="141" selection-end-column="45" />
-              <folding>
-                <element signature="e#0#18#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="104">
+              <caret line="103" column="6" lean-forward="false" selection-start-line="103" selection-start-column="6" selection-end-line="103" selection-end-column="6" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -70,9 +141,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>activity_dict</find>
-      <find>scaler</find>
       <find>score</find>
+      <find>discoun</find>
+      <find>true_preds</find>
+      <find>ep_accuracy</find>
+      <find>sneso</find>
+      <find>snes</find>
+      <find>sne</find>
+      <find>s</find>
+      <find>sen</find>
+      <find>sensor</find>
+      <find>sensor_</find>
+      <find>sensor_mode</find>
+      <find>sensor_model</find>
+      <find>sensor_model.</find>
+      <find>sensor_model.h</find>
+      <find>sensor_model.hd</find>
+      <find>sensor_model.hdf</find>
+      <find>agent.probs</find>
+      <find>self.probs</find>
+      <find>energy</find>
+      <find>ep_acc</find>
+      <find>discount_rewards</find>
+      <find>accuracy</find>
+      <find>reward</find>
+      <find>self.tot</find>
+      <find>agent</find>
+      <find>sensor_model_weights</find>
+      <find>multimodal</find>
+      <find>check</find>
+      <find>multimodal_generator</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -92,6 +190,11 @@
         <option value="$PROJECT_DIR$/src/LSTM.py" />
         <option value="$PROJECT_DIR$/src/Utils.py" />
         <option value="$PROJECT_DIR$/src/Autoencoders.py" />
+        <option value="$PROJECT_DIR$/src/pg-activity.py" />
+        <option value="$PROJECT_DIR$/src/pg-activity-tf.py" />
+        <option value="$PROJECT_DIR$/src/ActivityEnvironment.py" />
+        <option value="$PROJECT_DIR$/src/CNNFBF.py" />
+        <option value="$PROJECT_DIR$/.gitignore" />
       </list>
     </option>
   </component>
@@ -102,10 +205,10 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="-1203" />
-    <option name="y" value="-1057" />
-    <option name="width" value="1920" />
-    <option name="height" value="1057" />
+    <option name="x" value="27" />
+    <option name="y" value="23" />
+    <option name="width" value="1440" />
+    <option name="height" value="836" />
   </component>
   <component name="ProjectView">
     <navigator currentView="ProjectPane" proportions="" version="1">
@@ -122,10 +225,18 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="multimodal" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="multimodal" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
           <PATH>
             <PATH_ELEMENT>
               <option name="myItemId" value="multimodal" />
@@ -140,53 +251,50 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="multimodal" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="multimodal" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
         </subPane>
       </pane>
+      <pane id="Scratches" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
     <property name="js-jscs-nodeInterpreter" value="$USER_HOME$/.nvm/versions/node/v6.3.1/bin/node" />
     <property name="nodejs_interpreter_path" value="$USER_HOME$/.nvm/versions/node/v6.3.1/bin/node" />
     <property name="js.eslint.eslintPackage" value="" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.date" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.symlinks" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
+    <property name="SearchEverywhereHistoryKey" value="Act&#9;FILE&#9;file:///Users/rafaelpossas/Dev/multimodal/src/ActivityEnvironment.py" />
+    <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/models" />
+      <recent name="$PROJECT_DIR$/src/old" />
+      <recent name="$PROJECT_DIR$/src/data" />
+      <recent name="$PROJECT_DIR$/src/logs" />
       <recent name="$PROJECT_DIR$/sheila" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Autoencoders">
-    <configuration default="false" name="SensorDataset" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="multimodal_dataset" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/SensorDataset.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Python.EnsembleAgent">
     <configuration default="false" name="LSTM" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -203,42 +311,7 @@
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/LSTM.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
-    <configuration default="false" name="GridSearch" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="multimodal_dataset" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/GridSearch.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
-    <configuration default="false" name="SensorEvaluation" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="multimodal_dataset" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/SensorEvaluation.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
       <method />
     </configuration>
     <configuration default="false" name="Autoencoders" type="PythonConfigurationType" factoryName="Python" temporary="true">
@@ -257,6 +330,64 @@
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/Autoencoders.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="pg-activity" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="multimodal_dataset" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/pg-activity.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="ActivityEnvironment" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="multimodal_dataset" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/ActivityEnvironment.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="EnsembleAgent" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="multimodal_dataset" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/EnsembleAgent.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
       <method />
     </configuration>
     <configuration default="true" type="DjangoTestsConfigurationType" factoryName="Django tests">
@@ -277,6 +408,13 @@
       <option name="CUSTOM_SETTINGS" value="false" />
       <option name="USE_OPTIONS" value="false" />
       <option name="OPTIONS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavaScriptTestRunnerJest" factoryName="Jest">
+      <node-interpreter value="project" />
+      <working-dir value="" />
+      <envs />
+      <scope-kind value="ALL" />
       <method />
     </configuration>
     <configuration default="true" type="JavaScriptTestRunnerProtractor" factoryName="Protractor">
@@ -332,6 +470,7 @@
       <option name="SCRIPT_NAME" value="" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
       <method />
     </configuration>
     <configuration default="true" type="Tox" factoryName="Tox">
@@ -361,26 +500,6 @@
       <scripts />
       <node-interpreter value="project" />
       <envs />
-      <method />
-    </configuration>
-    <configuration default="true" type="tests" factoryName="Attests">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="multimodal_dataset" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="" />
-      <option name="CLASS_NAME" value="" />
-      <option name="METHOD_NAME" value="" />
-      <option name="FOLDER_NAME" value="" />
-      <option name="TEST_TYPE" value="TEST_SCRIPT" />
-      <option name="PATTERN" value="" />
-      <option name="USE_PATTERN" value="false" />
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Doctests">
@@ -414,15 +533,10 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="multimodal_dataset" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="" />
-      <option name="CLASS_NAME" value="" />
-      <option name="METHOD_NAME" value="" />
-      <option name="FOLDER_NAME" value="" />
-      <option name="TEST_TYPE" value="TEST_SCRIPT" />
-      <option name="PATTERN" value="" />
-      <option name="USE_PATTERN" value="false" />
-      <option name="PARAMS" value="" />
-      <option name="USE_PARAM" value="false" />
+      <option name="_new_regexPattern" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;.&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Unittests">
@@ -436,19 +550,45 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="multimodal_dataset" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="" />
-      <option name="CLASS_NAME" value="" />
-      <option name="METHOD_NAME" value="" />
-      <option name="FOLDER_NAME" value="" />
-      <option name="TEST_TYPE" value="TEST_SCRIPT" />
-      <option name="PATTERN" value="" />
-      <option name="USE_PATTERN" value="false" />
-      <option name="PUREUNITTEST" value="true" />
-      <option name="PARAMS" value="" />
-      <option name="USE_PARAM" value="false" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;.&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="py.test">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="multimodal_dataset" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;.&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method />
+    </configuration>
+    <list size="5">
+      <item index="0" class="java.lang.String" itemvalue="Python.LSTM" />
+      <item index="1" class="java.lang.String" itemvalue="Python.Autoencoders" />
+      <item index="2" class="java.lang.String" itemvalue="Python.pg-activity" />
+      <item index="3" class="java.lang.String" itemvalue="Python.ActivityEnvironment" />
+      <item index="4" class="java.lang.String" itemvalue="Python.EnsembleAgent" />
+    </list>
+    <recent_temporary>
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python.EnsembleAgent" />
+        <item index="1" class="java.lang.String" itemvalue="Python.ActivityEnvironment" />
+        <item index="2" class="java.lang.String" itemvalue="Python.pg-activity" />
+        <item index="3" class="java.lang.String" itemvalue="Python.Autoencoders" />
+        <item index="4" class="java.lang.String" itemvalue="Python.LSTM" />
+      </list>
+    </recent_temporary>
+    <configuration default="true" type="tests" factoryName="Attests">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs />
@@ -466,29 +606,8 @@
       <option name="TEST_TYPE" value="TEST_SCRIPT" />
       <option name="PATTERN" value="" />
       <option name="USE_PATTERN" value="false" />
-      <option name="testToRun" value="" />
-      <option name="keywords" value="" />
-      <option name="params" value="" />
-      <option name="USE_PARAM" value="false" />
-      <option name="USE_KEYWORD" value="false" />
       <method />
     </configuration>
-    <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="Python.SensorDataset" />
-      <item index="1" class="java.lang.String" itemvalue="Python.LSTM" />
-      <item index="2" class="java.lang.String" itemvalue="Python.GridSearch" />
-      <item index="3" class="java.lang.String" itemvalue="Python.SensorEvaluation" />
-      <item index="4" class="java.lang.String" itemvalue="Python.Autoencoders" />
-    </list>
-    <recent_temporary>
-      <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python.Autoencoders" />
-        <item index="1" class="java.lang.String" itemvalue="Python.LSTM" />
-        <item index="2" class="java.lang.String" itemvalue="Python.SensorEvaluation" />
-        <item index="3" class="java.lang.String" itemvalue="Python.GridSearch" />
-        <item index="4" class="java.lang.String" itemvalue="Python.SensorDataset" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="ShelveChangesManager" show_recycled="false">
     <option name="remove_strategy" value="false" />
@@ -516,28 +635,54 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1203" y="-1057" width="1920" height="1057" extended-state="6" />
+    <frame x="27" y="23" width="1440" height="836" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.20181043" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" show_stripe_button="true" weight="0.32258064" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" x="0" y="23" width="1440" height="836" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.37409326" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3252688" sideWeight="0.5028612" order="8" side_tool="true" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" show_stripe_button="true" weight="0.32258064" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" x="762" y="-1080" width="1855" height="1079" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.36155915" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Coverage" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.43010753" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.34120172" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.35479257" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3297568" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3968912" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3298722" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3297568" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32392472" sideWeight="0.49713877" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3298722" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
     </layout>
+    <layout-to-restore>
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="true" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.37365592" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" show_stripe_button="true" weight="0.32258064" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" x="-1203" y="-1080" width="1920" height="1080" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3293011" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.20457797" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="combo" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3297568" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3298722" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3968912" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3297568" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+    </layout-to-restore>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="processedProjectFiles" value="true" />
@@ -571,6 +716,16 @@
           <line>14</line>
           <option name="timeStamp" value="35" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/pg-activity.py</url>
+          <line>60</line>
+          <option name="timeStamp" value="77" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/pg-activity.py</url>
+          <line>67</line>
+          <option name="timeStamp" value="78" />
+        </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
@@ -579,150 +734,16 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="77" />
+      <option name="time" value="82" />
     </breakpoint-manager>
-    <watches-manager>
-      <configuration name="PythonConfigurationType">
-        <watch expression="split_test_x[0:198] " />
-        <watch expression="split_val_x" />
-      </configuration>
-    </watches-manager>
+    <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/sheila/ClassificatorSVM.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="5" lean-forward="false" selection-start-line="3" selection-start-column="5" selection-end-line="3" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/datasetEgoActivities.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="810">
-          <caret line="54" column="0" lean-forward="false" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/SensorFeatureExtractor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3078">
-          <caret line="171" column="57" lean-forward="false" selection-start-line="171" selection-start-column="57" selection-end-line="171" selection-end-column="57" />
-          <folding>
-            <element signature="e#0#35#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/ClassificatorSVM.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="54">
-          <caret line="3" column="5" lean-forward="false" selection-start-line="3" selection-start-column="5" selection-end-line="3" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/local/lib/python2.7/dist-packages/matplotlib/axes/_base.py" />
-    <entry file="file://$PROJECT_DIR$/sheila/datasetEgoActivities.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="972">
-          <caret line="54" column="0" lean-forward="false" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/local/lib/python2.7/dist-packages/numpy/core/fromnumeric.py" />
-    <entry file="file://$PROJECT_DIR$/sheila/arSensorsClassification.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/SensorFeatureExtractor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3132">
-          <caret line="174" column="43" lean-forward="false" selection-start-line="174" selection-start-column="43" selection-end-line="174" selection-end-column="43" />
-          <folding>
-            <element signature="e#0#35#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/ClassificatorSVM.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1278">
-          <caret line="74" column="59" lean-forward="false" selection-start-line="74" selection-start-column="59" selection-end-line="74" selection-end-column="59" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/datasetEgoActivities.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="972">
-          <caret line="54" column="0" lean-forward="false" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/local/lib/python2.7/dist-packages/numpy/core/fromnumeric.py" />
-    <entry file="file://$PROJECT_DIR$/sheila/arSensorsClassification.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/SensorFeatureExtractor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#35#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/sheila/datasetEgoActivities.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="738">
-          <caret line="41" column="7" lean-forward="false" selection-start-line="41" selection-start-column="7" selection-end-line="41" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.local/lib/python2.7/site-packages/pandas/tools/merge.py" />
-    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py" />
     <entry file="file:///usr/local/lib/python2.7/dist-packages/numpy/core/fromnumeric.py" />
     <entry file="file://$USER_HOME$/.local/lib/python2.7/site-packages/pandas/tools/merge.py" />
-    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py" />
     <entry file="file:///usr/local/lib/python2.7/dist-packages/numpy/core/fromnumeric.py" />
     <entry file="file://$USER_HOME$/.local/lib/python2.7/site-packages/pandas/tools/merge.py" />
     <entry file="file://$PROJECT_DIR$/sheila/utils.py">
@@ -751,16 +772,7 @@
       </provider>
     </entry>
     <entry file="file:///usr/local/lib/python2.7/dist-packages/matplotlib/axes/_base.py" />
-    <entry file="file://$PROJECT_DIR$/src/IMDB.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="20" column="0" lean-forward="false" selection-start-line="20" selection-start-column="0" selection-end-line="20" selection-end-column="20" />
-          <folding>
-            <element signature="e#0#12#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/IMDB.py" />
     <entry file="file:///usr/local/lib/python2.7/site-packages/keras/engine/training.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1710">
@@ -772,9 +784,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2580">
           <caret line="172" column="0" lean-forward="false" selection-start-line="172" selection-start-column="0" selection-end-line="178" selection-end-column="19" />
-          <folding>
-            <element signature="e#0#35#0" expanded="false" />
-          </folding>
+          <folding />
         </state>
       </provider>
     </entry>
@@ -786,20 +796,8 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/models/weights.hdf5" />
-    <entry file="file://$PROJECT_DIR$/src/pima-indians-diabetes.data">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/GridSearch.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="510">
-          <caret line="40" column="52" lean-forward="false" selection-start-line="40" selection-start-column="52" selection-end-line="40" selection-end-column="52" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/pima-indians-diabetes.data" />
+    <entry file="file://$PROJECT_DIR$/src/GridSearch.py" />
     <entry file="file://$PROJECT_DIR$/sheila/ClassificatorSVM.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="45">
@@ -814,20 +812,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Untitled.ipynb">
-      <provider selected="true" editor-type-id="ipnb-editor">
-        <state>
-          <selected id="2" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/SensorEvaluation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1425">
-          <caret line="95" column="32" lean-forward="false" selection-start-line="95" selection-start-column="32" selection-end-line="95" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Untitled.ipynb" />
     <entry file="file://$PROJECT_DIR$/sheila/datasetEgoActivities.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="480">
@@ -835,13 +820,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="855">
-          <caret line="62" column="0" lean-forward="false" selection-start-line="62" selection-start-column="0" selection-end-line="62" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/SensorDataset.py" />
     <entry file="file://$PROJECT_DIR$/src/Utils.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
@@ -860,27 +839,179 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="184">
           <caret line="2880" column="0" lean-forward="false" selection-start-line="2880" selection-start-column="0" selection-end-line="2880" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/Autoencoders.py" />
+    <entry file="file://$PROJECT_DIR$/src/old/Vision_Sensor_Comparison.ipynb">
+      <provider selected="true" editor-type-id="ipnb-editor">
+        <state>
+          <selected id="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/pg-activity-tf.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="13" column="48" lean-forward="true" selection-start-line="13" selection-start-column="48" selection-end-line="13" selection-end-column="48" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/PG-Evaluation.ipynb">
+      <provider selected="true" editor-type-id="ipnb-editor">
+        <state>
+          <selected id="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/old/LSTM_Test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1500">
+          <caret line="100" column="57" lean-forward="true" selection-start-line="100" selection-start-column="57" selection-end-line="100" selection-end-column="57" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/EnsembleAgent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/PredictiveAgent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/SensorDataset_UCI.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/SensorAgent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="105">
+          <caret line="12" column="8" lean-forward="false" selection-start-line="12" selection-start-column="8" selection-end-line="12" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#51#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/old/TrainNetwork.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#18#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/old/SensorDataset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/LSTM.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="389">
-          <caret line="141" column="45" lean-forward="true" selection-start-line="141" selection-start-column="45" selection-end-line="141" selection-end-column="45" />
+        <state relative-caret-position="1620">
+          <caret line="118" column="0" lean-forward="true" selection-start-line="118" selection-start-column="0" selection-end-line="118" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/old/MultimodalDataset_Test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="25" column="63" lean-forward="true" selection-start-line="25" selection-start-column="63" selection-end-line="25" selection-end-column="63" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/MultimodalDataset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2582">
+          <caret line="13" column="30" lean-forward="false" selection-start-line="13" selection-start-column="24" selection-end-line="13" selection-end-column="30" />
           <folding>
-            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#0#30#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/Autoencoders.py">
+    <entry file="file://$PROJECT_DIR$/src/CNNFBF.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="36">
-          <caret line="128" column="5" lean-forward="false" selection-start-line="128" selection-start-column="5" selection-end-line="128" selection-end-column="5" />
+        <state relative-caret-position="2460">
+          <caret line="164" column="0" lean-forward="true" selection-start-line="164" selection-start-column="0" selection-end-line="164" selection-end-column="0" />
           <folding>
-            <element signature="e#0#49#0" expanded="true" />
+            <element signature="e#0#55#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/VisionAgent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-206">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/old/ExtractVideo.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-2804">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/ActivityEnvironment.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="52">
+          <caret line="193" column="46" lean-forward="false" selection-start-line="193" selection-start-column="46" selection-end-line="193" selection-end-column="46" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/pg-activity.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="154">
+          <caret line="148" column="15" lean-forward="false" selection-start-line="148" selection-start-column="15" selection-end-line="148" selection-end-column="15" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/old/SensorEvaluation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="773">
+          <caret line="95" column="32" lean-forward="false" selection-start-line="95" selection-start-column="32" selection-end-line="95" selection-end-column="32" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="104">
+          <caret line="103" column="6" lean-forward="false" selection-start-line="103" selection-start-column="6" selection-end-line="103" selection-end-column="6" />
+          <folding />
         </state>
       </provider>
     </entry>
