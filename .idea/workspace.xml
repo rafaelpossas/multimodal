@@ -2,72 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="62daf1e3-6835-4d60-be7c-0e3dafcdcc77" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/EnsembleAgent.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/LSTM_Test.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/MultimodalDataset_Test.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/PredictiveAgent.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/SensorEvaluation.ipynb" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/SensorEvaluation.py" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/Vision_Sensor_Comparison.ipynb" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/10.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/10.00_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_accx_accy_accz_grax_gray_graz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/12.50_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_accx_accy_accz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/15.00_grax_gray_graz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_accx_accy_accz_grax_gray_graz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/17.50_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/20.00_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_accx_accy_accz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_grax_gray_graz_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_grax_gray_graz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_gyrx_gyry_gyrz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_gyrx_gyry_gyrz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/22.50_gyrx_gyry_gyrz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/25.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_magx_magy_magz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/27.50_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/30.00_grax_gray_graz_lacx_lacy_lacz_magx_magy_magz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/40.00_grax_gray_graz_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/40.00_grax_gray_graz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/47.50_accx_accy_accz_grax_gray_graz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/47.50_grax_gray_graz_gyrx_gyry_gyrz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/47.50_grax_gray_graz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_accx_accy_accz_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/50.00_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/52.50_accx_accy_accz_grax_gray_graz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/52.50_gyrx_gyry_gyrz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/52.50_gyrx_gyry_gyrz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/55.00_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/55.00_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_grax_gray_graz_gyrx_gyry_gyrz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_grax_gray_graz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_gyrx_gyry_gyrz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_lacx_lacy_lacz_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_accx_accy_accz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/models/57.50_grax_gray_graz_lacx_lacy_lacz_rotx_roty_rotz_rote_rmsprop_64_75_0.4.hdf5" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/ActivityEnvironment.py" afterPath="$PROJECT_DIR$/src/ActivityEnvironment.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/CNNFBF.py" afterPath="$PROJECT_DIR$/src/CNNFBF.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/pg-activity.py" afterPath="$PROJECT_DIR$/src/pg-activity.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
     </list>
     <ignored path="multimodal_dataset.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -123,8 +58,8 @@
       <file leaf-file-name=".gitignore" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="104">
-              <caret line="103" column="6" lean-forward="false" selection-start-line="103" selection-start-column="6" selection-end-line="103" selection-end-column="6" />
+            <state relative-caret-position="89">
+              <caret line="101" column="12" lean-forward="false" selection-start-line="101" selection-start-column="12" selection-end-line="101" selection-end-column="12" />
               <folding />
             </state>
           </provider>
@@ -248,6 +183,24 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="multimodal" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="multimodal" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="models" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -1009,8 +962,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="104">
-          <caret line="103" column="6" lean-forward="false" selection-start-line="103" selection-start-column="6" selection-end-line="103" selection-end-column="6" />
+        <state relative-caret-position="89">
+          <caret line="101" column="12" lean-forward="false" selection-start-line="101" selection-start-column="12" selection-end-line="101" selection-end-column="12" />
           <folding />
         </state>
       </provider>
