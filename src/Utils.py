@@ -3,13 +3,13 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 import math
 from sklearn.preprocessing import MinMaxScaler
+from src.MultimodalDataset import MultimodalDataset
 
 
 def plot_predictions(dt_array,
                      array_train_prediction, array_test_prediction,
                      array_y_train, array_y_test, labels=[],
                      scaler=MinMaxScaler()):
-
     number_axes = len(dt_array)
     f, axarr = plt.subplots(number_axes, sharex=True, figsize=(8, 8))
     i = 0
@@ -17,7 +17,6 @@ def plot_predictions(dt_array,
     for dt, train_prediction, test_prediction, y_train, y_test, label \
             in zip(dt_array, array_train_prediction, array_test_prediction,
                    array_y_train, array_y_test, labels):
-
         X = np.vstack((dt.x_train[:, :, :], dt.x_test[:, :, :]))
         X = X.reshape([X.shape[0] * X.shape[1], 1])
         X = scaler.fit_transform(X)
@@ -51,3 +50,19 @@ def plot_predictions(dt_array,
         i += 1
 
     plt.show()
+
+
+def create_dataset(sensors):
+    dataset = MultimodalDataset()
+    dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/train',
+                                    sensor_root='../multimodal_dataset/sensor/',
+                                    sensors=sensors,
+                                    output_file='multimodal_full_train.hdf5')
+
+    dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/test',
+                                    sensor_root='../multimodal_dataset/sensor/',
+                                    sensors=sensors,
+                                    output_file='multimodal_full_test.hdf5')
+
+if __name__=='__main__':
+    create_dataset(['accx', 'accy', 'accz'])

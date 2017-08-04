@@ -1,13 +1,13 @@
 import numpy as np
-
-
-from src.SensorDataset_UCI import SensorDatasetUCI
+import h5py
 from keras.models import Sequential
-
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Dropout, RepeatVector
+from keras.optimizers import RMSprop
 from src.Utils import *
+from src.MultimodalDataset import MultimodalDataset
+
 from keras.callbacks import EarlyStopping, ModelCheckpoint,ReduceLROnPlateau
 
 
@@ -63,6 +63,45 @@ class RegressionLSTM:
         return trainPredict, testPredict
 
 class SensorLSTM:
+
+    def train_model(self, train_file=None, test_file=None, chunk_size=5,step_size=1):
+
+        # scaler = MinMaxScaler()
+        train_file = h5py.File(train_file)
+        test_file = h5py.File(test_file)
+        dataset = MultimodalDataset()
+
+        train_sns_x = train_file['x_sns'][:]
+        train_sns_y = train_file['y_sns'][:]
+        train_onehot_y = np.eye(20)[train_sns_y]
+
+        train_sns_x, train_onehot_y = dataset.split_windows(chunk_size, step_size, train_sns_x, train_onehot_y)
+
+        print(train_sns_x.shape)
+
+        test_sns_x = test_file['x_sns'][:]
+        test_sns_y = test_file['y_sns'][:]
+        test_onehot_y = np.eye(20)[test_sns_y]
+
+
+        test_sns_x, test_onehot_y = dataset.split_windows(chunk_size, step_size, test_sns_x, test_onehot_y)
+
+        print(test_sns_x.shape)
+
+        sensor_lstm = SensorLSTM()
+        earlystopping = EarlyStopping(patience=20)
+        model_checkpoint = ModelCheckpoint('sensor_model.hdf5', save_best_only=True)
+        # reduce_lr = ReduceLROnPlateau(patience=20, min_lr=0.000001, verbose=1)
+        rmsprop = RMSprop()
+        model_lstm = sensor_lstm.get_model(input_shape=(train_sns_x.shape[1], train_sns_x.shape[2]),
+                                           output_shape=train_onehot_y.shape[1], dropout=0.4, layer_size=64,
+                                           optimizer=rmsprop)
+        # model_lstm.load_weights('models/65.00_accx_accy_accz_rmsprop_64_75_0.4.hdf5')
+        #model_lstm.fit(train_sns_x, train_onehot_y, batch_size=100, epochs=1000,
+        #                validation_data=(test_sns_x, test_onehot_y), callbacks=[earlystopping, model_checkpoint], verbose=2)
+        model_lstm.load_weights("sensor_model.hdf5")
+        print(model_lstm.evaluate(test_sns_x, test_onehot_y))
+        return model_lstm
 
     def get_model(self, input_shape, output_shape, layer_size=128, optimizer='rmsprop', dropout=0.2):
         model = Sequential()
@@ -145,3 +184,8 @@ class AutoencoderLSTM:
         if save_model:
             model.save_weights(filepath=filepath)
 
+
+if __name__=='__main__':
+    sns_lst = SensorLSTM()
+    sns_lst.train_model(train_file='data/multimodal_full_train.hdf5',
+                        test_file="data/multimodal_full_test.hdf5", chunk_size=30, step_size=1)

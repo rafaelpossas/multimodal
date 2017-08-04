@@ -12,7 +12,6 @@ import cv2
 import h5py
 import numpy as np
 
-from old.SensorDataset import SensorDataset
 
 activity_dict = {
     'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
@@ -45,91 +44,91 @@ def greedy_split(arr, chunk_size, step_size, axis=0):
     return [arr[i:i + int(chunk_size), :] for i in ix]
 
 
-def create_dataset(chunk_size, step_size, sensor_total_samples=150, image_total_samples=450):
+# def create_dataset(chunk_size, step_size, sensor_total_samples=150, image_total_samples=450):
+#
+#     folder = '../multimodal_dataset/video/images/test/'
+#     sensors = ['accx', 'accy', 'accz']
+#     sensor_dt = SensorDataset('../multimodal_dataset/sensor/')
+#
+#     max_samples = max([sensor_total_samples, image_total_samples])
+#     min_samples = min([sensor_total_samples, image_total_samples])
+#
+#     min_max_raio = max_samples / min_samples
+#
+#     chunk_size_sensor = chunk_size if sensor_total_samples > image_total_samples else chunk_size / min_max_raio
+#     chunk_size_image = chunk_size if image_total_samples > sensor_total_samples else chunk_size / min_max_raio
+#
+#     step_size_sensor = step_size if sensor_total_samples > image_total_samples else step_size / min_max_raio
+#     step_size_image = step_size if image_total_samples > sensor_total_samples else step_size / min_max_raio
+#
+#     if not float(chunk_size_sensor).is_integer() or not float(chunk_size_image).is_integer():
+#         raise Exception("Both Chunk sizes should be a whole number")
+#
+#     if not float(step_size_sensor).is_integer() or not float(step_size_image).is_integer():
+#         raise Exception("Both Step sizes should be a whole number")
+#
+#     x_img = []
+#     y_img = []
+#     x_sensor = []
+#     y_sensor = []
+#     for path, subdirs, files in os.walk(folder):
+#         if len(subdirs) > 0:
+#             print("Current Path: " + path)
+#         for seq in subdirs:
+#             cur_class = []
+#             cur_image = []
+#
+#             files = glob.glob(path+"/" + seq + '/*.jpg')
+#
+#             if len(files) > 0:
+#                 print("Creating images for: "+seq)
+#
+#             for ix, name in enumerate(files):
+#                 if ix < image_total_samples:
+#                     cur_image = cv2.resize(cv2.imread(name), (224, 224))
+#                     cur_class.append(cur_image)
+#
+#             while 0 < len(cur_class) < image_total_samples:
+#                 cur_class.append(cur_image)
+#
+#             if len(cur_class) > 0:
+#                 act = path.split("/")[-1]
+#                 cur_class_arr = np.array(cur_class)
+#
+#                 cur_class = greedy_split(cur_class_arr,
+#                                          chunk_size=chunk_size_image, step_size=step_size_image)
+#                 csv_file = act + seq + '.csv'
+#                 sensor_x, sensor_y = sensor_dt._load_from_file(actvity=act, activities_files=[csv_file],
+#                                                                selected_sensors=sensors, activity_dict=activity_dict)
+#
+#                 sensor_x, sensor_y = sensor_dt.split_windows(int(chunk_size_sensor), int(step_size_sensor), sensor_x, sensor_y)
+#
+#                 for cur_frame, cur_sensor_x, cur_sensor_y in zip(cur_class, sensor_x, sensor_y):
+#                     x_img.append(cur_frame)
+#                     y_img.append(activity_dict[path.split('/')[-1]][0])
+#                     x_sensor.append(cur_sensor_x)
+#                     y_sensor.append(cur_sensor_y[0])
+#
+#                 print(np.array(x_img).shape)
+#                 print(np.array(y_img).shape)
+#                 print(np.array(x_sensor).shape)
+#                 print(np.array(y_sensor).shape)
+#
+#     #x, y = shuffle(x, y)
+#
+#     with h5py.File("all_test_activity_frames.hdf5", "w") as hf:
+#         hf.create_dataset("x_img", data=x_img)
+#         hf.create_dataset("y_img", data=y_img)
+#         hf.create_dataset("x_sns", data=x_sensor)
+#         hf.create_dataset("y_sns", data=y_sensor)
+#
+#         # if len(x) > 0:
+#         #     print(min([len(p) for p in x]))
+#         # x = []
+#         # y = []
 
-    folder = '../multimodal_dataset/video/images/test/'
-    sensors = ['accx', 'accy', 'accz']
-    sensor_dt = SensorDataset('../multimodal_dataset/sensor/')
 
-    max_samples = max([sensor_total_samples, image_total_samples])
-    min_samples = min([sensor_total_samples, image_total_samples])
-
-    min_max_raio = max_samples / min_samples
-
-    chunk_size_sensor = chunk_size if sensor_total_samples > image_total_samples else chunk_size / min_max_raio
-    chunk_size_image = chunk_size if image_total_samples > sensor_total_samples else chunk_size / min_max_raio
-
-    step_size_sensor = step_size if sensor_total_samples > image_total_samples else step_size / min_max_raio
-    step_size_image = step_size if image_total_samples > sensor_total_samples else step_size / min_max_raio
-
-    if not float(chunk_size_sensor).is_integer() or not float(chunk_size_image).is_integer():
-        raise Exception("Both Chunk sizes should be a whole number")
-
-    if not float(step_size_sensor).is_integer() or not float(step_size_image).is_integer():
-        raise Exception("Both Step sizes should be a whole number")
-
-    x_img = []
-    y_img = []
-    x_sensor = []
-    y_sensor = []
-    for path, subdirs, files in os.walk(folder):
-        if len(subdirs) > 0:
-            print("Current Path: " + path)
-        for seq in subdirs:
-            cur_class = []
-            cur_image = []
-
-            files = glob.glob(path+"/" + seq + '/*.jpg')
-
-            if len(files) > 0:
-                print("Creating images for: "+seq)
-
-            for ix, name in enumerate(files):
-                if ix < image_total_samples:
-                    cur_image = cv2.resize(cv2.imread(name), (224, 224))
-                    cur_class.append(cur_image)
-
-            while 0 < len(cur_class) < image_total_samples:
-                cur_class.append(cur_image)
-
-            if len(cur_class) > 0:
-                act = path.split("/")[-1]
-                cur_class_arr = np.array(cur_class)
-
-                cur_class = greedy_split(cur_class_arr,
-                                         chunk_size=chunk_size_image, step_size=step_size_image)
-                csv_file = act + seq + '.csv'
-                sensor_x, sensor_y = sensor_dt._load_from_file(actvity=act, activities_files=[csv_file],
-                                                               selected_sensors=sensors, activity_dict=activity_dict)
-
-                sensor_x, sensor_y = sensor_dt.split_windows(int(chunk_size_sensor), int(step_size_sensor), sensor_x, sensor_y)
-
-                for cur_frame, cur_sensor_x, cur_sensor_y in zip(cur_class, sensor_x, sensor_y):
-                    x_img.append(cur_frame)
-                    y_img.append(activity_dict[path.split('/')[-1]][0])
-                    x_sensor.append(cur_sensor_x)
-                    y_sensor.append(cur_sensor_y[0])
-
-                print(np.array(x_img).shape)
-                print(np.array(y_img).shape)
-                print(np.array(x_sensor).shape)
-                print(np.array(y_sensor).shape)
-
-    #x, y = shuffle(x, y)
-
-    with h5py.File("all_test_activity_frames.hdf5", "w") as hf:
-        hf.create_dataset("x_img", data=x_img)
-        hf.create_dataset("y_img", data=y_img)
-        hf.create_dataset("x_sns", data=x_sensor)
-        hf.create_dataset("y_sns", data=y_sensor)
-
-        # if len(x) > 0:
-        #     print(min([len(p) for p in x]))
-        # x = []
-        # y = []
-
-
-def extract_files(test_seqs=['seq09', 'seq10']):
+def extract_files(test_seqs=['seq05']):
     """After we have all of our videos split between train and test, and
     all nested within folders representing their classes, we need to
     make a data file that we can reference when training our RNN(s).
@@ -142,8 +141,7 @@ def extract_files(test_seqs=['seq09', 'seq10']):
     `ffmpeg -i video.mpg image-%04d.jpg`
     """
     data_file = []
-    folders = ['../multimodal_dataset/video']
-
+    folders = ['../../multimodal_dataset/video']
     for folder in folders:
         class_folders = glob.glob(folder + '*')
 
@@ -208,8 +206,8 @@ def main():
     can use as our data input file. It can have format:
     [train|test], class, filename, nb frames
     """
-    create_dataset(15, 15)
+    #create_dataset(15, 15)
     #extract_files()
 
 if __name__ == '__main__':
-    main()
+    extract_files()

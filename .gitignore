@@ -101,3 +101,5 @@ uci_cleaned/
 sensor/
 checkpoints/
 .idea/
+.pyc
+.DS_Store
