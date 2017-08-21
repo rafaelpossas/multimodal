@@ -67,11 +67,6 @@
                 android:text="@string/record"
                 android:layout_weight="1"
                 android:textAlignment="center" />
-            <Button
-                android:id="@+id/record_start_btn2"
-                android:layout_weight="1"
-                android:text="@string/record"
-                android:textAlignment="center" />
         </TableRow>
 
 

@@ -53,7 +53,7 @@ public class CameraFragment extends Fragment {
 
     private CameraDevice mCameraDevice;
 
-    public static final String TAG = "CameraFragment";
+    public static final String TAG = "egocentric";
 
     private CaptureRequest.Builder mPreviewBuilder;
 

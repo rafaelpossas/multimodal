@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Size;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,6 +28,12 @@ import java.util.TimerTask;
 
 public abstract class MainActivity extends AppCompatActivity implements ImageReader.OnImageAvailableListener, TextToSpeech.OnInitListener {
 
+    static class SensorXYZ{
+        public Float x;
+        public Float y;
+        public Float z;
+    }
+    protected List<SensorXYZ> sensorValues;
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     private static final String PERMISSION_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
     private static final int PERMISSIONS_REQUEST = 1;
@@ -38,9 +45,7 @@ public abstract class MainActivity extends AppCompatActivity implements ImageRea
     protected TextView cur_activity_prob;
     protected Button record_btn;
 
-    protected static List<Float> x;
-    protected static List<Float> y;
-    protected static List<Float> z;
+
 
     private TextToSpeech textToSpeech;
 
@@ -71,13 +76,18 @@ public abstract class MainActivity extends AppCompatActivity implements ImageRea
             requestPermission();
         }
 
-        x = new ArrayList<>();
-        y = new ArrayList<>();
-        z = new ArrayList<>();
+        sensorValues = new ArrayList<>();
 
         cur_activity_prob = (TextView) findViewById(R.id.cur_activity_prob);
         cur_activity_text = (TextView) findViewById(R.id.cur_activity_title);
         record_btn = (Button) findViewById(R.id.record_start_btn);
+
+        record_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recordBtnListener();
+            }
+        });
 
         classifier = new SensorClassifier(getApplicationContext());
 
@@ -85,6 +95,7 @@ public abstract class MainActivity extends AppCompatActivity implements ImageRea
         textToSpeech.setLanguage(Locale.US);
 
     }
+
     protected void setFragment() {
         final Fragment fragment =
                 CameraFragment.newInstance(
@@ -177,6 +188,8 @@ public abstract class MainActivity extends AppCompatActivity implements ImageRea
     protected abstract void onPreviewSizeChosen(final Size size, final int rotation);
     protected abstract int getLayoutId();
     protected abstract Size getDesiredPreviewFrameSize();
+    protected abstract void recordBtnListener();
+
 
 
 

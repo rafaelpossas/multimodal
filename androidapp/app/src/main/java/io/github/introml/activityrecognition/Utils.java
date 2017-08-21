@@ -72,13 +72,10 @@ public class Utils {
      */
     public static void saveBitmap(final Bitmap bitmap, final String filename, String directory) {
         final String root =
-                Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "egocentric/" + File.separator + directory;
-        Log.e(CameraFragment.TAG, "Saving "+bitmap.getWidth()+"x"+bitmap.getHeight()+" to "+root);
+                Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "egocentric" + File.separator + directory;
+        //Log.e(CameraFragment.TAG, "Saving "+bitmap.getWidth()+"x"+bitmap.getHeight()+" to "+root);
         final File myDir = new File(root);
-
-        if (!myDir.mkdirs()) {
-            Log.e(CameraFragment.TAG, "Directory Already exists");
-        }
+        myDir.mkdirs();
 
         final String fname = filename;
         final File file = new File(myDir, fname);

@@ -1,6 +1,7 @@
 package io.github.introml.activityrecognition;
 
 import android.graphics.Bitmap;
+import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.hardware.Sensor;
@@ -18,6 +19,9 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,7 +32,15 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
 
     private List<Bitmap> bitmaps;
 
-    private Long initiaTime;
+    private List<Bitmap> recording_bitmaps;
+    private List<SensorXYZ> recording_sensor;
+
+    private List<Float> x = new ArrayList<>();
+    private List<Float> y = new ArrayList<>();
+    private List<Float> z = new ArrayList<>();
+
+    private Long snsInitialTime;
+    private Long imgInitialTime;
 
     private Size mVideoSize;
 
@@ -46,6 +58,7 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
     private static final String INPUT_NAME = "input";
     private static final String OUTPUT_NAME = "output";
     private static final Boolean SAVE_PREVIEW_BITMAP = true;
+    private static final int TIMER_VALUE = 5000;
 
     private static final String MODEL_FILE = "file:///android_asset/tensorflow_inception_graph.pb";
     private static final String LABEL_FILE = "file:///android_asset/imagenet_comp_graph_label_strings.txt";
@@ -67,7 +80,8 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
 
     private String recording_name;
 
-    private Boolean isRecording = false;
+    private Boolean isRecordingSns = false;
+    private Boolean isRecordingImg = false;
 
     private File sensorFile = null;
 
@@ -93,14 +107,33 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
         return (SensorManager) getSystemService(SENSOR_SERVICE);
     }
     private void startRecording(){
-        isRecording = true;
-        recording_name = "ACT_"+System.currentTimeMillis();
+        isRecordingSns = true;
+        isRecordingImg = true;
         sensorFile = createSensorFile();
+        record_btn.setText("Stop");
+        Log.i(CameraFragment.TAG, "Recording Started");
     }
 
+    private void stopRecording() {
+        if(!isRecordingImg && !isRecordingSns){
+            sensorFile = null;
+            recording_sensor = null;
+            recording_bitmaps = null;
+            Log.i(CameraFragment.TAG, "Recording Stopped");
+        }
+
+    }
+    protected void recordBtnListener(){
+        if(!isRecordingSns && !isRecordingImg){
+            startRecording();
+        }else {
+            stopRecording();
+        }
+    }
     @Override
     public void onImageAvailable(ImageReader reader) {
         Image image = reader.acquireLatestImage();
+
         if (image == null)
             return;
         if (computing) {
@@ -111,25 +144,37 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
 
         Bitmap outBitmap = Utils.YUV_420_888_toRGB(image, reader.getWidth(),reader.getHeight(), this);
 
-        if(bitmaps == null) {
-            bitmaps = new ArrayList<Bitmap>();
-            initiaTime = System.currentTimeMillis();
-        }
 
         if(croppedBitmap!=null) {
             final Canvas canvas = new Canvas(croppedBitmap);
             canvas.drawBitmap(outBitmap, frameToCropTransform, null);
+
+            if(bitmaps == null) {
+                bitmaps = new ArrayList<>();
+                imgInitialTime = System.currentTimeMillis();
+            }
+
             bitmaps.add(croppedBitmap);
             // For examining the actual TF input.
-            if (SAVE_PREVIEW_BITMAP) {
-                //ImageUtils.saveBitmap(croppedBitmap, ACTIVITY_ID + File.separator + initiaTime);
+            if (isRecordingImg) {
+                //Utils.saveBitmap(croppedBitmap, recording_name + File.separator + "images");
+                if(recording_bitmaps == null) {
+                    recording_bitmaps = new ArrayList<>();
+                }
+
+                recording_bitmaps.add(croppedBitmap);
+
+                if(recording_bitmaps.size() == 150){
+                    isRecordingImg = false;
+                    stopRecording();
+                    Log.i(CameraFragment.TAG, "Bitmap recording stopped");
+                }
             }
         }
 
-
         if(bitmaps.size() == 30) {
             bitmaps = null;
-            Log.e(CameraFragment.TAG, "Number of Seconds to collect 30 frames: "+ TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - initiaTime));
+            Log.i(CameraFragment.TAG, "Number of Seconds to collect 30 frames: "+ TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - imgInitialTime));
         }
 
         image.close();
@@ -166,13 +211,45 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
     }
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if(!isRecording)
-            startRecording();
-        activityPrediction();
-        x.add(event.values[0]);
-        y.add(event.values[1]);
-        z.add(event.values[2]);
-        Utils.saveSensor(event.values[0],event.values[1],event.values[2], sensorFile);
+        SensorXYZ curSensorValues;
+        if(!isRecordingSns)
+            record_btn.setText("Record");
+            //activityPrediction();
+
+        if(snsInitialTime == null){
+            snsInitialTime = System.currentTimeMillis();
+        }
+
+        if(System.currentTimeMillis() - snsInitialTime >= 100){
+            curSensorValues = new SensorXYZ();
+
+            curSensorValues.x = event.values[0];
+            curSensorValues.y = event.values[1];
+            curSensorValues.z = event.values[2];
+
+            x.add(event.values[0]);
+            y.add(event.values[1]);
+            z.add(event.values[2]);
+
+            sensorValues.add(curSensorValues);
+            snsInitialTime = null;
+
+
+            if(isRecordingSns) {
+                if (recording_sensor == null) {
+                    recording_sensor = new ArrayList<>();
+                }
+                recording_sensor.add(curSensorValues);
+
+                if (recording_sensor.size() == 50) {
+                    isRecordingSns = false;
+                    stopRecording();
+                    Log.i(CameraFragment.TAG, "Sensor recording stopped");
+                }
+                //Utils.saveSensor(event.values[0],event.values[1],event.values[2], sensorFile);
+            }
+        }
+
     }
 
     @Override
@@ -181,19 +258,14 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
     }
 
     private void activityPrediction() {
-        if (x.size() == N_SAMPLES && y.size() == N_SAMPLES && z.size() == N_SAMPLES) {
+        if (sensorValues.size() == N_SAMPLES) {
             List<Float> data = new ArrayList<>();
             data.addAll(x);
             data.addAll(y);
             data.addAll(z);
 
             results = classifier.predictProbabilities(toFloatArray(data));
-//            downstairsTextView.setText(Float.toString(round(results[0], 2)));
-//            joggingTextView.setText(Float.toString(round(results[1], 2)));
-//            sittingTextView.setText(Float.toString(round(results[2], 2)));
-//            standingTextView.setText(Float.toString(round(results[3], 2)));
-//            upstairsTextView.setText(Float.toString(round(results[4], 2)));
-//            walkingTextView.setText(Float.toString(round(results[5], 2)));
+
             float max = -1;
             int idx = -1;
             for (int i = 0; i < results.length; i++) {
