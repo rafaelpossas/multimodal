@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context="io.github.introml.activityrecognition.ClassifierActivity">
+
+
 
     <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:background="#ededed"
         android:padding="22dp"
-        tools:context="io.github.introml.activityrecognition.MainActivity">
+
+        android:id="@+id/tbl_layout">
 
         <TableRow
             android:id="@+id/title_row"
@@ -56,6 +61,22 @@
                 android:textAlignment="center"
                 android:textSize="18sp" />
         </TableRow>
+        <TableRow>
+            <Button
+                android:id="@+id/record_start_btn"
+                android:text="@string/record"
+                android:layout_weight="1"
+                android:textAlignment="center" />
+            <Button
+                android:id="@+id/record_start_btn2"
+                android:layout_weight="1"
+                android:text="@string/record"
+                android:textAlignment="center" />
+        </TableRow>
+
 
     </TableLayout>
-</ScrollView>
+
+
+
+</FrameLayout>
