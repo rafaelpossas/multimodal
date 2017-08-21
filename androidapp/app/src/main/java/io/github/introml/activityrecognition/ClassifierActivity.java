@@ -146,7 +146,7 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
 
 
         if(croppedBitmap!=null) {
-            final Canvas canvas = new Canvas(croppedBitmap);
+            Canvas canvas = new Canvas(croppedBitmap);
             canvas.drawBitmap(outBitmap, frameToCropTransform, null);
 
             if(bitmaps == null) {
@@ -162,10 +162,13 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
                     recording_bitmaps = new ArrayList<>();
                 }
 
-                recording_bitmaps.add(croppedBitmap);
+                recording_bitmaps.add(croppedBitmap.copy(croppedBitmap.getConfig(),croppedBitmap.isMutable()));
 
                 if(recording_bitmaps.size() == 150){
                     isRecordingImg = false;
+                    for (int i = 0; i < recording_bitmaps.size() ; i++) {
+                        Utils.saveBitmap(recording_bitmaps.get(i), recording_name + File.separator + "images");
+                    }
                     stopRecording();
                     Log.i(CameraFragment.TAG, "Bitmap recording stopped");
                 }
@@ -243,10 +246,13 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
 
                 if (recording_sensor.size() == 50) {
                     isRecordingSns = false;
+                    for (int i = 0; i < x.size() ; i++) {
+                        Utils.saveSensor(x.get(i),y.get(i),z.get(i), sensorFile);
+                    }
                     stopRecording();
+
                     Log.i(CameraFragment.TAG, "Sensor recording stopped");
                 }
-                //Utils.saveSensor(event.values[0],event.values[1],event.values[2], sensorFile);
             }
         }
 
