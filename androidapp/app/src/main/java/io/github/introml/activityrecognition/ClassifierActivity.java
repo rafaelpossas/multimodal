@@ -52,6 +52,10 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
 
     private boolean computing = false;
 
+    private static final int FPS = 30;
+    private static final int TOTAL_RECORDING_TIME_SECONDS = 5;
+    private static final int HERTZ = 10;
+
     private static final int INPUT_SIZE = 224;
     private static final int IMAGE_MEAN = 117;
     private static final float IMAGE_STD = 1;
@@ -109,6 +113,7 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
     private void startRecording(){
         isRecordingSns = true;
         isRecordingImg = true;
+        recording_name = "REC_"+System.currentTimeMillis();
         sensorFile = createSensorFile();
         record_btn.setText("Stop");
         Log.i(CameraFragment.TAG, "Recording Started");
@@ -161,10 +166,10 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
                 if(recording_bitmaps == null) {
                     recording_bitmaps = new ArrayList<>();
                 }
+                if(recording_bitmaps.size() < FPS * TOTAL_RECORDING_TIME_SECONDS)
+                    recording_bitmaps.add(croppedBitmap.copy(croppedBitmap.getConfig(),croppedBitmap.isMutable()));
 
-                recording_bitmaps.add(croppedBitmap.copy(croppedBitmap.getConfig(),croppedBitmap.isMutable()));
-
-                if(recording_bitmaps.size() == 150){
+                if(recording_bitmaps.size() ==  FPS * TOTAL_RECORDING_TIME_SECONDS){
                     isRecordingImg = false;
                     for (int i = 0; i < recording_bitmaps.size() ; i++) {
                         Utils.saveBitmap(recording_bitmaps.get(i), recording_name + File.separator + "images");
@@ -175,7 +180,7 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
             }
         }
 
-        if(bitmaps.size() == 30) {
+        if(bitmaps.size() == FPS) {
             bitmaps = null;
             Log.i(CameraFragment.TAG, "Number of Seconds to collect 30 frames: "+ TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - imgInitialTime));
         }
@@ -216,38 +221,42 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
     public void onSensorChanged(SensorEvent event) {
         SensorXYZ curSensorValues;
         if(!isRecordingSns)
-            record_btn.setText("Record");
+            if(!record_btn.getText().equals("Record"))
+                record_btn.setText("Record");
             //activityPrediction();
 
         if(snsInitialTime == null){
             snsInitialTime = System.currentTimeMillis();
         }
 
-        if(System.currentTimeMillis() - snsInitialTime >= 100){
-            curSensorValues = new SensorXYZ();
-
-            curSensorValues.x = event.values[0];
-            curSensorValues.y = event.values[1];
-            curSensorValues.z = event.values[2];
+        if(System.currentTimeMillis() - snsInitialTime >= 1000 / HERTZ){
 
             x.add(event.values[0]);
             y.add(event.values[1]);
             z.add(event.values[2]);
 
-            sensorValues.add(curSensorValues);
             snsInitialTime = null;
 
 
             if(isRecordingSns) {
+
                 if (recording_sensor == null) {
                     recording_sensor = new ArrayList<>();
                 }
-                recording_sensor.add(curSensorValues);
 
-                if (recording_sensor.size() == 50) {
+                curSensorValues = new SensorXYZ();
+
+                curSensorValues.x = event.values[0];
+                curSensorValues.y = event.values[1];
+                curSensorValues.z = event.values[2];
+
+                if(recording_sensor.size() < HERTZ * TOTAL_RECORDING_TIME_SECONDS)
+                    recording_sensor.add(curSensorValues);
+
+                if (recording_sensor.size() == HERTZ * TOTAL_RECORDING_TIME_SECONDS) {
                     isRecordingSns = false;
-                    for (int i = 0; i < x.size() ; i++) {
-                        Utils.saveSensor(x.get(i),y.get(i),z.get(i), sensorFile);
+                    for (int i = 0; i < recording_sensor.size() ; i++) {
+                        Utils.saveSensor(recording_sensor.get(i).x,recording_sensor.get(i).y,recording_sensor.get(i).z, sensorFile);
                     }
                     stopRecording();
 
@@ -264,7 +273,7 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
     }
 
     private void activityPrediction() {
-        if (sensorValues.size() == N_SAMPLES) {
+        if (x.size() == N_SAMPLES && y.size() == N_SAMPLES && z.size() == N_SAMPLES) {
             List<Float> data = new ArrayList<>();
             data.addAll(x);
             data.addAll(y);
