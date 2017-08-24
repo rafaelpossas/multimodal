@@ -1,1 +1,2 @@
+include ':openCVLibrary320'
 include ':app'

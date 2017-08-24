@@ -12,11 +12,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.util.Size;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.opencv.android.OpenCVLoader;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -67,6 +70,8 @@ public abstract class MainActivity extends AppCompatActivity implements ImageRea
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Check to see if opencv is enabled
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 

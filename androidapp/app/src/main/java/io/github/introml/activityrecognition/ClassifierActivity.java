@@ -15,6 +15,11 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Display;
 
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
+
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -146,39 +151,44 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
             return;
         }
         computing = true;
+        Mat mYuvMat = Utils.imageToMat(image);
+        Mat mat_out_rgb = new Mat();
 
-        Bitmap outBitmap = Utils.YUV_420_888_toRGB(image, reader.getWidth(),reader.getHeight(), this);
+        Imgproc.cvtColor(mYuvMat, mat_out_rgb, Imgproc.COLOR_YUV2RGBA_I420);
+        Bitmap outBitmap = Bitmap.createBitmap(mat_out_rgb.cols(),mat_out_rgb.rows(),Bitmap.Config.ARGB_8888);
+        org.opencv.android.Utils.matToBitmap(mat_out_rgb, outBitmap);
 
 
-        if(croppedBitmap!=null) {
-            Canvas canvas = new Canvas(croppedBitmap);
-            canvas.drawBitmap(outBitmap, frameToCropTransform, null);
-
-            if(bitmaps == null) {
-                bitmaps = new ArrayList<>();
-                imgInitialTime = System.currentTimeMillis();
-            }
-
-            bitmaps.add(croppedBitmap);
-            // For examining the actual TF input.
-            if (isRecordingImg) {
-                //Utils.saveBitmap(croppedBitmap, recording_name + File.separator + "images");
-                if(recording_bitmaps == null) {
-                    recording_bitmaps = new ArrayList<>();
-                }
-                if(recording_bitmaps.size() < FPS * TOTAL_RECORDING_TIME_SECONDS)
-                    recording_bitmaps.add(croppedBitmap.copy(croppedBitmap.getConfig(),croppedBitmap.isMutable()));
-
-                if(recording_bitmaps.size() ==  FPS * TOTAL_RECORDING_TIME_SECONDS){
-                    isRecordingImg = false;
-                    for (int i = 0; i < recording_bitmaps.size() ; i++) {
-                        Utils.saveBitmap(recording_bitmaps.get(i), recording_name + File.separator + "images");
-                    }
-                    stopRecording();
-                    Log.i(CameraFragment.TAG, "Bitmap recording stopped");
-                }
-            }
+        if(bitmaps == null) {
+            bitmaps = new ArrayList<>();
+            imgInitialTime = System.currentTimeMillis();
         }
+        bitmaps.add(outBitmap);
+//        if(croppedBitmap!=null) {
+//            Canvas canvas = new Canvas(croppedBitmap);
+//            canvas.drawBitmap(outBitmap, frameToCropTransform, null);
+//
+//
+//            bitmaps.add(croppedBitmap);
+//            // For examining the actual TF input.
+//            if (isRecordingImg) {
+//                //Utils.saveBitmap(croppedBitmap, recording_name + File.separator + "images");
+//                if(recording_bitmaps == null) {
+//                    recording_bitmaps = new ArrayList<>();
+//                }
+//                if(recording_bitmaps.size() < FPS * TOTAL_RECORDING_TIME_SECONDS)
+//                    recording_bitmaps.add(croppedBitmap.copy(croppedBitmap.getConfig(),croppedBitmap.isMutable()));
+//
+//                if(recording_bitmaps.size() ==  FPS * TOTAL_RECORDING_TIME_SECONDS){
+//                    isRecordingImg = false;
+//                    for (int i = 0; i < recording_bitmaps.size() ; i++) {
+//                        Utils.saveBitmap(recording_bitmaps.get(i), recording_name + File.separator + "images");
+//                    }
+//                    stopRecording();
+//                    Log.i(CameraFragment.TAG, "Bitmap recording stopped");
+//                }
+//            }
+//        }
 
         if(bitmaps.size() == FPS) {
             bitmaps = null;
@@ -309,6 +319,11 @@ public class ClassifierActivity extends MainActivity implements ImageReader.OnIm
     protected void onResume() {
         super.onResume();
         getSensorManager().registerListener(this, getSensorManager().getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+        if (!OpenCVLoader.initDebug()) {
+            Log.d(CameraFragment.TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+        } else {
+            Log.d(CameraFragment.TAG, "OpenCV library found inside package. Using it!");
+        }
     }
     //@Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {

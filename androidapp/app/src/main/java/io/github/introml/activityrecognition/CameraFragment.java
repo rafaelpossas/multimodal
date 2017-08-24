@@ -280,8 +280,8 @@ public class CameraFragment extends Fragment {
                 return false;
 
             mVideoSize = chooseOptimalSize(sizes,width, height,largest);
-            mImageReader = ImageReader.newInstance(mVideoSize.getWidth(),
-                    mVideoSize.getHeight(),
+            mImageReader = ImageReader.newInstance(640,
+                    480,
                     ImageFormat.YUV_420_888, 3);
             mImageReader.setOnImageAvailableListener(imageListener,mBackgroundHandler);
 
