@@ -1,11 +1,84 @@
-.gradle
-/local.properties
-/.idea/workspace.xml
-/.idea/libraries
-.DS_Store
-/build
-/captures
-.idea/
-*.iml
+# Created by .ignore support plugin (hsz.mobi)
+# OSX
+*.DS_Store
 
-.externalNativeBuild
+
+# Gradle files
+build/
+.gradle/
+*/build/
+
+
+# IDEA
+*.iml
+.idea/.name
+.idea/encodings.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/scope_settings.xml
+.idea/vcs.xml
+.idea/workspace.xml
+.idea/libraries
+
+
+# Built application files
+*.apk
+*.ap_
+
+
+# Files for the Dalvik VM
+*.dex
+
+
+# Java class files
+*.class
+
+
+# Generated files
+antLauncher/bin
+antLauncher/gen
+
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+
+# Log Files
+*.log
+README.md~
+openCVLibrary320/build/generated/assets/
+openCVLibrary320/build/generated/res/
+openCVLibrary320/build/generated/source/aidl/androidTest/
+openCVLibrary320/build/generated/source/rs/
+openCVLibrary320/build/intermediates/bundles/debug/aidl/
+openCVLibrary320/build/intermediates/bundles/debug/assets/
+openCVLibrary320/build/intermediates/bundles/release/aidl/
+openCVLibrary320/build/intermediates/bundles/release/assets/
+openCVLibrary320/build/intermediates/incremental/mergeDebugAndroidTestResources/aapt-temp/
+openCVLibrary320/build/intermediates/incremental/packageDebugResources/aapt-temp/
+openCVLibrary320/build/intermediates/incremental/packageReleaseResources/aapt-temp/
+openCVLibrary320/build/intermediates/incremental/processDebugAndroidTestResources/
+openCVLibrary320/build/intermediates/incremental/processDebugResources/
+openCVLibrary320/build/intermediates/lint/
+openCVLibrary320/build/intermediates/manifest/tmp/
+openCVLibrary320/build/intermediates/rs/
+openCVLibrary320/build/intermediates/shaders/
+openCVSamplefacedetection/build/generated/res/
+openCVSamplefacedetection/build/generated/source/aidl/
+openCVSamplefacedetection/build/generated/source/r/androidTest/
+openCVSamplefacedetection/build/generated/source/rs/
+openCVSamplefacedetection/build/intermediates/blame/res/androidTest/
+openCVSamplefacedetection/build/intermediates/exploded-aar/opencv-android-sdk/openCVLibrary320/unspecified/aidl/
+openCVSamplefacedetection/build/intermediates/exploded-aar/opencv-android-sdk/openCVLibrary320/unspecified/assets/
+openCVSamplefacedetection/build/intermediates/incremental/mergeDebugAndroidTestResources/aapt-temp/
+openCVSamplefacedetection/build/intermediates/incremental/mergeDebugAndroidTestResources/merged.dir/
+openCVSamplefacedetection/build/intermediates/incremental/mergeDebugResources/aapt-temp/
+openCVSamplefacedetection/build/intermediates/incremental/processDebugAndroidTestResources/
+openCVSamplefacedetection/build/intermediates/incremental/processDebugResources/
+openCVSamplefacedetection/build/intermediates/manifest/tmp/
+openCVSamplefacedetection/build/intermediates/manifests/instant-run/
+openCVSamplefacedetection/build/intermediates/res/merged/androidTest/
+openCVSamplefacedetection/build/intermediates/rs/
+openCVSamplefacedetection/build/intermediates/symbols/androidTest/

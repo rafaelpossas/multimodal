@@ -1,2 +1,2 @@
 include ':openCVLibrary320'
-include ':app'
+include ':egocentric'

@@ -1,9 +1,0 @@
-<resources>
-    <string name="app_name">Activity Recognition</string>
-    <string name="activity">Activity</string>
-    <string name="probability">Probability</string>
-    <string name="cur_activity"></string>
-    <string name="description_info">Info</string>
-    <string name="record">Record</string>
-
-</resources>

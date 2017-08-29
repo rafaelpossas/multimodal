@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/configuration_activity"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="edu.au.sydney.ConfigurationActivity"
+    android:layout_margin="5dp">
+
+    <TextView
+        android:id="@+id/txt_seconds"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Total Seconds"
+        android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+
+    <EditText
+        android:id="@+id/edt_seconds"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="numberSigned"
+        android:text="30" />
+
+    <TextView
+        android:id="@+id/txt_fps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Frames per second"
+        android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+    <Spinner
+        android:id="@+id/fps_dropdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/fps_available"
+        android:prompt="@string/fps" />
+    <TextView
+        android:id="@+id/txt_hertz"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Hertz (Sensors)"
+        android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+    <Spinner
+        android:id="@+id/hz_dropdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/hz_available"
+        android:prompt="@string/hz" />
+
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save" />
+
+
+</LinearLayout>
