@@ -18,23 +18,31 @@ public class MenuUtils {
 
         switch (item.getItemId()) {
             case R.id.menu_configuration:
+                MainActivity.CUR_STATE = MainActivity.CONFIGURATION;
                 Intent intent_configuration = new Intent(context, ConfigurationActivity.class);
                 context.startActivity(intent_configuration);
                 return true;
 
+
             case R.id.menu_record:
-                Intent intent_record = new Intent(context, MainActivity.class);
-                context.startActivity(intent_record);
+                if(MainActivity.CUR_STATE.equals(MainActivity.CONFIGURATION)) {
+                    Intent intent_record = new Intent(context, MainActivity.class);
+                    context.startActivity(intent_record);
+                }
                 MainActivity.CUR_STATE = MainActivity.RECORDING;
                 return true;
 
             case R.id.menu_predict:
-                Intent intent_predict = new Intent(context, MainActivity.class);
-                context.startActivity(intent_predict);
+                if(MainActivity.CUR_STATE.equals(MainActivity.CONFIGURATION)){
+                    Intent intent_predict = new Intent(context, MainActivity.class);
+                    context.startActivity(intent_predict);
+                }
                 MainActivity.CUR_STATE = MainActivity.PREDICTING;
+                return true;
+            default:
                 return true;
 
         }
-        return false;
+
     }
 }

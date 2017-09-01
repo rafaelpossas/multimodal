@@ -36,14 +36,14 @@ import java.util.Vector;
  */
 public class ImageClassifier implements Classifier {
 
-    private static final String MODEL_FILE = "file:///android_asset/tensorflow_inception_graph.pb";
-    private static final String LABEL_FILE = "file:///android_asset/imagenet_comp_graph_label_strings.txt";
+    private static final String MODEL_FILE = "file:///android_asset/vision_weights.pb";
+    private static final String LABEL_FILE = "file:///android_asset/activity_label_strings.txt";
 
     public static final int INPUT_SIZE = 224;
     private static final int IMAGE_MEAN = 117;
-    private static final float IMAGE_STD = 1;
-    private static final String INPUT_NAME = "input";
-    private static final String OUTPUT_NAME = "output";
+    private static final float IMAGE_STD = 255;
+    private static final String INPUT_NAME = "input_1";
+    private static final String OUTPUT_NAME = "output_node0";
 
     private static final String TAG = "TensorFlowImageClassifier";
 
@@ -102,7 +102,7 @@ public class ImageClassifier implements Classifier {
 
         // The shape of the output is [N, NUM_CLASSES], where N is the batch size.
         final Operation operation = c.inferenceInterface.graphOperation(OUTPUT_NAME);
-        final int numClasses = (int) operation.output(0).shape().size(1);
+        final int numClasses = (int) operation.output(0).shape().size(0);
         // Ideally, inputSize could have been retrieved from the shape of the input operation.  Alas,
         // the placeholder node for input in the graphdef typically used does not specify a shape, so it
         // must be passed in as a parameter.
@@ -130,9 +130,9 @@ public class ImageClassifier implements Classifier {
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
         for (int i = 0; i < intValues.length; ++i) {
             final int val = intValues[i];
-            floatValues[i * 3 + 0] = (((val >> 16) & 0xFF) - imageMean) / imageStd;
-            floatValues[i * 3 + 1] = (((val >> 8) & 0xFF) - imageMean) / imageStd;
-            floatValues[i * 3 + 2] = ((val & 0xFF) - imageMean) / imageStd;
+            floatValues[i * 3 + 0] = (((val >> 16) & 0xFF)) / imageStd;
+            floatValues[i * 3 + 1] = (((val >> 8) & 0xFF)) / imageStd;
+            floatValues[i * 3 + 2] = ((val & 0xFF)) / imageStd;
         }
         Trace.endSection();
 
