@@ -19,6 +19,8 @@ import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.widget.TextView;
 
+import org.bytedeco.javacv.FFmpegFrameRecorder;
+import org.bytedeco.javacv.Frame;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -31,6 +33,8 @@ import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -74,8 +78,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     protected ImageClassifier image_classifier;
 
     private static final long TIMEOUT = 1000L;
-    public static Integer TOTAL_RECORDING_TIME_SECONDS = 10;
-    public static Integer FPS = 15;
+    public static Integer TOTAL_RECORDING_TIME_SECONDS = 5;
+    public static Integer FPS = 30;
     public static Integer HERTZ = 10;
 
     public static String CUR_STATE = RECORDING;
@@ -83,7 +87,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private Mat mRgba;
     private Mat mRgbaT;
 
+    private int imageWidth;
+    private int imageHeight;
+
     private int images_saved = 0;
+    private FFmpegFrameRecorder recorder;
+    private Frame yuvImage = null;
 
     private List<SensorXYZ> recording_sensor;
     private List<Float> x;
@@ -104,6 +113,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private Boolean isRecordingSns = false;
 
     private String recording_name;
+    private String current_root_dir;
 
     private File sensorFile = null;
 
@@ -115,6 +125,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private HandlerThread handlerThread;
 
     private String lastVisionLabel = "";
+
+    private long startTime;
 
     //protected String[] labels = {"Downstairs", "Jogging", "Sitting", "Standing", "Upstairs", "Walking"};
 
@@ -156,8 +168,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
             @Override
             public void run() {
                 if(frames.size() > 0){
-                    if(isRecordingImg && isRecordingSns)
-                        saveImageOnDisk();
+                    if(isRecordingImg && isRecordingSns) {
+                        saveImageOnDisk(false);
+
+                    }
                     else if(CUR_STATE.equals(PREDICTING)){
                         Mat cropped = null;
 
@@ -227,7 +241,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     public MainActivity() {
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
-    public void saveImageOnDisk(){
+    public void saveImageOnDisk(Boolean singleImages){
         if(frames.size() > 0){
             Mat inputFrame = null;
             try {
@@ -239,19 +253,25 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 // timeout. Also, with a try {} catch block poll can be interrupted via Thread.interrupt() so not to wait for the timeout.
                 return;
             }
+            if(singleImages){
+                Bitmap outBitmap = Bitmap.createBitmap(inputFrame.cols(), inputFrame.rows(), Bitmap.Config.ARGB_8888);
+                org.opencv.android.Utils.matToBitmap(inputFrame, outBitmap);
+                FileUtils.saveBitmap(outBitmap, recording_name + File.separator + "images");
+                if(!isRecordingImg && !isRecordingSns && CUR_STATE.equals(RECORDING)){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            status.setText("Saving image files on disk ("+frames.size()+" images left)");
+                        }
+                    });
 
-            Bitmap outBitmap = Bitmap.createBitmap(inputFrame.cols(), inputFrame.rows(), Bitmap.Config.ARGB_8888);
-            org.opencv.android.Utils.matToBitmap(inputFrame, outBitmap);
-            FileUtils.saveBitmap(outBitmap, recording_name + File.separator + "images");
-            if(!isRecordingImg && !isRecordingSns && CUR_STATE.equals(RECORDING)){
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        status.setText("Saving image files on disk ("+frames.size()+" images left)");
-                    }
-                });
-
+                }
+            }else{
+                byte[] byteFrame = new byte[(int) (inputFrame.total() * inputFrame.channels())];
+                mRgbaT.get(0, 0, byteFrame);
+                onFrame(byteFrame);
             }
+
         }
     }
 
@@ -272,6 +292,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         clearTexts();
         return MenuUtils.onOptionsItemSelected(item, this);
     }
+
     @Override
     public void onPause() {
         try{
@@ -345,6 +366,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     public void onCameraViewStarted(int width, int height) {
         mRgbaT = new Mat();
         mRgba = new Mat();
+        imageWidth = width;
+        imageHeight = height;
     }
 
     public void onCameraViewStopped() {
@@ -378,12 +401,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
             }
         }, 0, 1000);
         sensorFile = createSensorFile();
-
+        startRecordingVideo();
         Log.i(TAG, "Recording Started");
     }
 
     private void stopRecording() {
+
         if(!isRecordingImg && !isRecordingSns){
+            stopRecordingVideo();
             timer.cancel();
             sensorFile = null;
             recording_sensor = null;
@@ -399,7 +424,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
 
             while(frames.size()!=0){
-                saveImageOnDisk();
+                saveImageOnDisk(false);
             }
 
             Log.i(TAG, "Recording Stopped");
@@ -417,10 +442,39 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         if (!myDir.mkdirs()) {
             Log.e(TAG, "Directory Already exists");
         }
-
+        current_root_dir = root;
         final String fname = filename;
         File file = new File(myDir, fname);
         return file;
+    }
+    private void onFrame(byte[] data){
+
+            long videoTimestamp = 1000 * (System.currentTimeMillis() - startTime);
+
+            // Put the camera preview frame right into the yuvIplimage object
+
+            try {
+
+                // Get the correct time
+                if(recorder!=null) {
+                    recorder.setTimestamp(videoTimestamp);
+
+                    // Record the image into FFmpegFrameRecorder
+                    Frame frame = new Frame(imageWidth, imageHeight, Frame.DEPTH_UBYTE, 4);
+                    ((ByteBuffer) frame.image[0].position(0)).put(data);
+                    recorder.record(frame);
+
+
+                    Log.i(TAG, "Wrote Frame: " + frame);
+                }
+
+
+            }
+            catch (FFmpegFrameRecorder.Exception e) {
+                Log.v(TAG,e.getMessage());
+                e.printStackTrace();
+            }
+
     }
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
@@ -526,7 +580,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     @Override
     public void onSensorChanged(SensorEvent event) {
         SensorXYZ curSensorValues;
-        Log.i(TAG, "OnSensorChanged");
 
         if(CUR_STATE.equals(PREDICTING))
             activityPrediction();
@@ -625,4 +678,70 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
             handler.post(r);
         }
     }
+
+    private void startRecordingVideo() {
+        initRecorder();
+
+        try {
+            startTime = System.currentTimeMillis();
+            recorder.start();
+        } catch(FFmpegFrameRecorder.Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void stopRecordingVideo() {
+
+        if(recorder != null) {
+
+            Log.v(TAG, "Finishing recording, calling stop and release on recorder");
+            try {
+                recorder.stop();
+                recorder.release();
+            } catch(FFmpegFrameRecorder.Exception e) {
+                e.printStackTrace();
+            }
+            recorder = null;
+        }
+    }
+
+
+    //---------------------------------------
+    // initialize ffmpeg_recorder
+    //---------------------------------------
+    private void initRecorder() {
+        Log.w(TAG,"initRecorder");
+
+
+        Log.v(TAG, "IplImage.create");
+        // }
+
+        File videoFile = new File(current_root_dir + File.separator + recording_name+".mp4");
+        boolean mk = videoFile.getParentFile().mkdirs();
+        Log.v(TAG, "Mkdir: " + mk);
+
+        boolean del = videoFile.delete();
+        Log.v(TAG, "del: " + del);
+
+        try {
+            boolean created = videoFile.createNewFile();
+            Log.v(TAG, "Created: " + created);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        String ffmpeg_link = videoFile.getAbsolutePath();
+        recorder = new FFmpegFrameRecorder(ffmpeg_link, imageWidth, imageHeight, 1);
+        Log.v(TAG, "FFmpegFrameRecorder: " + ffmpeg_link + " imageWidth: " + imageWidth + " imageHeight " + imageHeight);
+
+        recorder.setFormat("mp4");
+        Log.v(TAG, "recorder.setFormat(\"mp4\")");
+
+
+        // re-set in the surface changed method as well
+        recorder.setFrameRate(30);
+        Log.v(TAG, "recorder.setFrameRate(frameRate)");
+    }
+
 }
