@@ -48,7 +48,7 @@ public class FileUtils {
             Log.e(MainActivity.TAG, e.toString());
         }
     }
-    public static void saveSensor(float x,float y, float z, File file) {
+    public static void saveSensor(float x,float y, float z,int cur_activity, File file) {
         try {
             final FileOutputStream out;
             if(!file.exists()) {
@@ -57,7 +57,7 @@ public class FileUtils {
                 out = new FileOutputStream(file,true);
             }
             OutputStreamWriter myOutWriter = new OutputStreamWriter(out);
-            myOutWriter.append(x+"\t"+y+"\t"+z+"\n");
+            myOutWriter.append(x+"\t"+y+"\t"+z+"\t"+cur_activity+"\n");
             myOutWriter.close();
             out.close();
         } catch (final Exception e) {

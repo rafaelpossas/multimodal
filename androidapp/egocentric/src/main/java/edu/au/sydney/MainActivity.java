@@ -58,6 +58,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         public Float x;
         public Float y;
         public Float z;
+        public Integer cur_activity;
     }
 
     public static final String TAG = "EGOCENTRIC";
@@ -78,9 +79,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     protected ImageClassifier image_classifier;
 
     private static final long TIMEOUT = 1000L;
-    public static Integer TOTAL_RECORDING_TIME_SECONDS = 5;
-    public static Integer FPS = 30;
-    public static Integer HERTZ = 10;
+    public static Integer TOTAL_RECORDING_TIME_SECONDS = 600;
+    public static Integer FPS = 15;
+    public static Integer HERTZ = 15;
 
     public static String CUR_STATE = RECORDING;
 
@@ -126,7 +127,11 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
     private String lastVisionLabel = "";
 
-    private long startTime;
+    private Long startTime = null;
+
+    private int recorded_images;
+
+    private int cur_activity;
 
     //protected String[] labels = {"Downstairs", "Jogging", "Sitting", "Standing", "Upstairs", "Walking"};
 
@@ -155,7 +160,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
         textToSpeech = new TextToSpeech(this, this);
         textToSpeech.setLanguage(Locale.US);
-
+        createWorker().start();
         frames = new LinkedBlockingQueue<Mat>();
         x = new ArrayList<>();
         y = new ArrayList<>();
@@ -167,56 +172,58 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         Thread thread = new Thread() {
             @Override
             public void run() {
-                if(frames.size() > 0){
-                    if(isRecordingImg && isRecordingSns) {
-                        saveImageOnDisk(false);
-
-                    }
-                    else if(CUR_STATE.equals(PREDICTING)){
-                        Mat cropped = null;
-
-                        try {
-                            cropped = frames.poll(TIMEOUT, TimeUnit.MILLISECONDS);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                while(true){
+                    if(frames.size() > 0){
+                        if(isRecordingImg) {
+                            saveImageOnDisk(false);
                         }
+                        else if(CUR_STATE.equals(PREDICTING)){
+                            Mat cropped = null;
 
-                        Bitmap croppedBitmap = Bitmap.createBitmap(cropped.cols(),
-                                cropped.rows(), Bitmap.Config.ARGB_8888);
-                        Utils.matToBitmap(cropped,croppedBitmap);
+                            try {
+                                cropped = frames.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
 
-                        final List<Classifier.Recognition> results =
-                                image_classifier.recognizeImage(croppedBitmap);
+                            Bitmap croppedBitmap = Bitmap.createBitmap(cropped.cols(),
+                                    cropped.rows(), Bitmap.Config.ARGB_8888);
+                            Utils.matToBitmap(cropped,croppedBitmap);
 
+                            final List<Classifier.Recognition> results =
+                                    image_classifier.recognizeImage(croppedBitmap);
+
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if(results.size() > 0 &&
+                                            !results.get(0).toString().split(" ")[1].equals(lastVisionLabel)
+                                            && !textToSpeech.isSpeaking()){
+
+                                        lastVisionLabel = results.get(0).toString().split(" ")[1];
+                                        if(TEXT_TO_SPEECH){
+                                            textToSpeech.speak(lastVisionLabel.replace("_"," "),
+                                                    TextToSpeech.QUEUE_ADD, null, Integer.toString(new Random().nextInt()));
+                                        }
+
+                                    }
+                                    status_aux.setText(results.get(0).toString());
+                                }
+                            });
+
+
+                        }
+                    }else if(frames.size() == 0 && !status.getText().equals("") && (!isRecordingSns
+                            && !isRecordingImg) && ! CUR_STATE.equals(PREDICTING)) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                if(results.size() > 0 &&
-                                        !results.get(0).toString().split(" ")[1].equals(lastVisionLabel)
-                                        && !textToSpeech.isSpeaking()){
-
-                                    lastVisionLabel = results.get(0).toString().split(" ")[1];
-                                    if(TEXT_TO_SPEECH){
-                                        textToSpeech.speak(lastVisionLabel.replace("_"," "),
-                                                TextToSpeech.QUEUE_ADD, null, Integer.toString(new Random().nextInt()));
-                                    }
-
-                                }
-                                status_aux.setText(results.get(0).toString());
+                                status.setText("");
                             }
                         });
-
-
                     }
-                }else if(frames.size() == 0 && !status.getText().equals("") && (!isRecordingSns
-                        && !isRecordingImg) && ! CUR_STATE.equals(PREDICTING)) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            status.setText("");
-                        }
-                    });
                 }
+
             }
         };
         return thread;
@@ -336,6 +343,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         try{
             super.onResume();
             getSensorManager().registerListener(this, getSensorManager().getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+
             if (!OpenCVLoader.initDebug()) {
                 Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
                 OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
@@ -376,10 +384,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     }
 
     private void startRecording(){
+        recording_name = "REC_"+System.currentTimeMillis();
+        sensorFile = createSensorFile();
+        cur_activity = 0;
+        startRecordingVideo();
         isRecordingSns = true;
         isRecordingImg = true;
         images_saved = 0;
-        recording_name = "REC_"+System.currentTimeMillis();
         timer = new Timer();
         runOnUiThread(new Runnable() {
             @Override
@@ -400,14 +411,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 });
             }
         }, 0, 1000);
-        sensorFile = createSensorFile();
-        startRecordingVideo();
+
         Log.i(TAG, "Recording Started");
     }
 
     private void stopRecording() {
 
         if(!isRecordingImg && !isRecordingSns){
+            while(frames.size()!=0){
+                saveImageOnDisk(false);
+            }
             stopRecordingVideo();
             timer.cancel();
             sensorFile = null;
@@ -423,9 +436,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
             });
 
 
-            while(frames.size()!=0){
-                saveImageOnDisk(false);
-            }
 
             Log.i(TAG, "Recording Stopped");
         }
@@ -448,7 +458,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         return file;
     }
     private void onFrame(byte[] data){
-
+            if(startTime == null) {
+                startTime = System.currentTimeMillis();
+            }
             long videoTimestamp = 1000 * (System.currentTimeMillis() - startTime);
 
             // Put the camera preview frame right into the yuvIplimage object
@@ -457,15 +469,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
                 // Get the correct time
                 if(recorder!=null) {
-                    recorder.setTimestamp(videoTimestamp);
+                    //recorder.setTimestamp(videoTimestamp);
 
                     // Record the image into FFmpegFrameRecorder
                     Frame frame = new Frame(imageWidth, imageHeight, Frame.DEPTH_UBYTE, 4);
                     ((ByteBuffer) frame.image[0].position(0)).put(data);
                     recorder.record(frame);
+                    recorded_images++;
 
 
-                    Log.i(TAG, "Wrote Frame: " + frame);
+                    Log.i(TAG, "Wrote Frame: " + recorded_images);
                 }
 
 
@@ -481,8 +494,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         mRgba = inputFrame.rgba();
         Core.flip(mRgba, mRgba, -1);
 
-        mRgbaT = new Mat();
-        mRgba.copyTo(mRgbaT);
 
         //Log.i(TAG,"Difference: "+diff);
 
@@ -499,13 +510,20 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                     });
                 if (isRecordingImg) {
                     try {
-                        frames.put(mRgbaT);
-                        images_saved++;
+                        if (images_saved < FPS * TOTAL_RECORDING_TIME_SECONDS){
+                            mRgbaT = new Mat();
+                            mRgba.copyTo(mRgbaT);
+                            frames.put(mRgbaT);
+                            images_saved++;
+
+                        }
+                        Log.i(TAG, "Frames size is: "+frames.size());
+
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
 
-                    if (images_saved >= FPS * TOTAL_RECORDING_TIME_SECONDS) {
+                    if (images_saved >= FPS * TOTAL_RECORDING_TIME_SECONDS && frames.size() == 0) {
                         isRecordingImg = false;
                         stopRecording();
                         Log.i(TAG, "Bitmap recording stopped");
@@ -528,7 +546,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                     e.printStackTrace();
                 }
             }
-            runInBackground(createWorker());
         }
 
         return mRgba;
@@ -548,7 +565,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         if(event.getAction() == MotionEvent.ACTION_BUTTON_RELEASE && CUR_STATE.equals(RECORDING)){
             Log.i(TAG,"Touch pad button released");
             if(isRecordingImg){
-                stopRecording();
+                cur_activity++;
             }else{
                 final ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
                 if(TEXT_TO_SPEECH)
@@ -607,6 +624,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 curSensorValues.x = event.values[0];
                 curSensorValues.y = event.values[1];
                 curSensorValues.z = event.values[2];
+                curSensorValues.cur_activity = new Integer(cur_activity);
 
                 if(recording_sensor.size() < HERTZ * TOTAL_RECORDING_TIME_SECONDS)
                     recording_sensor.add(curSensorValues);
@@ -614,7 +632,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 if (recording_sensor.size() == HERTZ * TOTAL_RECORDING_TIME_SECONDS) {
                     isRecordingSns = false;
                     for (int i = 0; i < recording_sensor.size() ; i++) {
-                        FileUtils.saveSensor(recording_sensor.get(i).x,recording_sensor.get(i).y,recording_sensor.get(i).z, sensorFile);
+                        FileUtils.saveSensor(recording_sensor.get(i).x,recording_sensor.get(i).y,
+                                recording_sensor.get(i).z, recording_sensor.get(i).cur_activity,
+                                sensorFile);
                     }
                     stopRecording();
 
@@ -681,9 +701,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
     private void startRecordingVideo() {
         initRecorder();
+        recorded_images = 0;
 
         try {
-            startTime = System.currentTimeMillis();
             recorder.start();
         } catch(FFmpegFrameRecorder.Exception e) {
             e.printStackTrace();
@@ -740,7 +760,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
 
         // re-set in the surface changed method as well
-        recorder.setFrameRate(30);
+        recorder.setFrameRate(FPS);
         Log.v(TAG, "recorder.setFrameRate(frameRate)");
     }
 
