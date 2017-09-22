@@ -1,6 +1,7 @@
 package edu.au.sydney;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -113,13 +114,22 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private Boolean isRecordingImg = false;
     private Boolean isRecordingSns = false;
 
+    private Boolean isClassifyingSns = false;
+    private Boolean isClassifyingImg = false;
+
     private String recording_name;
     private String current_root_dir;
 
+    private Handler handler;
+    private HandlerThread handlerThread;
+
     private File sensorFile = null;
 
-    private Timer timer_image;
-    private Timer timer_sensor;
+    private Timer timer_recording_image;
+    private Timer timer_recording_sensor;
+
+    private Timer timer_image_classifier;
+    private Timer timer_sensor_classifier;
 
     private TextToSpeech textToSpeech;
 
@@ -132,7 +142,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
     private int cur_activity;
 
-    private byte[] last_image;
 
     private SensorXYZ curSensorValues;
 
@@ -269,8 +278,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     @Override
     public void onPause() {
         try{
-            if(!MainActivity.CUR_STATE.equals(CONFIGURATION))
-                MainActivity.CUR_STATE = RECORDING;
+
+            if(!MainActivity.CUR_STATE.equals(PREDICTING)){
+                stopPredicting();
+            }
+            if(isRecordingImg){
+                stopRecordingVideo();
+            }
+            if(isRecordingSns){
+                stopRecordingSensor();
+            }
 
             if(textToSpeech!=null){
                 textToSpeech.speak("", TextToSpeech.QUEUE_FLUSH, null, Integer.toString(new Random().nextInt()));
@@ -289,6 +306,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 Log.i(TAG, "Requesting finish");
                 finish();
             }
+            handlerThread.quitSafely();
+
+            try {
+                handlerThread.join();
+                handlerThread = null;
+                handler = null;
+            } catch (final InterruptedException e) {
+                e.printStackTrace();
+            }
+
             super.onPause();
 
         }catch (Exception e) {
@@ -301,6 +328,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     public void onResume() {
         try{
             super.onResume();
+            if(MainActivity.CUR_STATE.equals(PREDICTING)){
+                startPredicting();
+            }
             getSensorManager().registerListener(this, getSensorManager().getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
 
             if (!OpenCVLoader.initDebug()) {
@@ -311,6 +341,11 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
             }
 
+            handlerThread = new HandlerThread("inference");
+            handlerThread.start();
+            handler = new Handler(handlerThread.getLooper());
+
+
             
         }catch (Exception e){
             e.printStackTrace();
@@ -318,11 +353,15 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
     }
 
-    public void onDestroy() {
+    protected synchronized void runInBackground(final Runnable r) {
+        if (handler != null) {
+            handler.post(r);
+        }
+    }
 
+    public void onDestroy() {
         if(mOpenCvCameraView!=null)
             mOpenCvCameraView.disableView();
-
         super.onDestroy();
 
     }
@@ -338,27 +377,92 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         mRgbaT.release();
         mRgba.release();
     }
+    private TimerTask imageClassifyingTask() {
+        return new TimerTask() {
+            @Override
+            public void run(){
+                if(CUR_STATE.equals(PREDICTING)) {
+                    if(mRgba!= null){
+                        int x = (mRgba.width()/2) - (ImageClassifier.INPUT_SIZE/2);
+                        int y = (mRgba.height()/2) - (ImageClassifier.INPUT_SIZE/2);
 
-    private void startRecording(){
-        recording_name = "REC_"+System.currentTimeMillis();
-        sensorFile = createSensorFile();
-        cur_activity = 0;
-        startRecordingVideo();
-        isRecordingSns = true;
-        isRecordingImg = true;
-        images_saved = 0;
+                        Rect roi = new Rect(x, y, ImageClassifier.INPUT_SIZE, ImageClassifier.INPUT_SIZE);
 
-        timer_image = new Timer();
-        timer_sensor = new Timer();
+                        Mat cropped = new Mat(mRgba, roi);
 
-        runOnUiThread(new Runnable() {
+                        try {
+                            if(frames!=null) {
+                                frames.put(cropped);
+                                runInBackground(createWorker());
+                            }
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            }
+        };
+    }
+    private TimerTask sensorClassifyingTask() {
+        return new TimerTask() {
             @Override
             public void run() {
-                if(TEXT_TO_SPEECH)
-                    textToSpeech.speak("Recording started", TextToSpeech.QUEUE_ADD, null, Integer.toString(new Random().nextInt()));
+                x.add(curSensorValues.x);
+                y.add(curSensorValues.y);
+                z.add(curSensorValues.z);
+
+                if(CUR_STATE.equals(PREDICTING)) {
+                    //Log.i(TAG,"Predicting activity from sensor");
+                    if (x.size() > N_SAMPLES || y.size() > N_SAMPLES || z.size() > N_SAMPLES) {
+                        x.clear();
+                        y.clear();
+                        z.clear();
+                    }
+                    if (x.size() == N_SAMPLES && y.size() == N_SAMPLES
+                            && z.size() == N_SAMPLES && CUR_STATE.equals(PREDICTING)) {
+
+                        List<Float> data = new ArrayList<>();
+                        data.addAll(x);
+                        data.addAll(y);
+                        data.addAll(z);
+
+                        results = classifier.predictProbabilities(ClassifierUtils.toFloatArray(data));
+
+                        if (results != null && results.length > 0) {
+                            float max = -1;
+                            int idx = -1;
+                            for (int i = 0; i < results.length; i++) {
+                                if (results[i] > max) {
+                                    idx = i;
+                                    max = results[i];
+                                }
+                            }
+                            sensor_label = labels[idx];
+                            sensor_prob = Float.toString(max);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Log.i(TAG, "Updating sensor label");
+                                    status.setText(sensor_label);
+                                }
+                            });
+
+                            //cur_activity_prob.setText(sensor_prob);
+
+                        }
+
+                        x.clear();
+                        y.clear();
+                        z.clear();
+                    }
+                }
+
             }
-        });
-        timer_image.scheduleAtFixedRate(new TimerTask() {
+        };
+    }
+    private TimerTask imageRecordingTask(){
+        return new TimerTask() {
             @Override
             public void run() {
                 runOnUiThread(new Runnable() {
@@ -367,46 +471,108 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                         status.setText("Recording ("+images_saved/FPS+")");
                     }
                 });
-                onFrame(last_image);
+
+                //Log.i(TAG,"Difference: "+diff);
+                byte[] byteFrame = new byte[(int) (mRgba.total() * mRgba.channels())];
+
+                mRgba.get(0, 0, byteFrame);
+
+                onFrame(byteFrame);
                 images_saved++;
+
                 if(images_saved == FPS * TOTAL_RECORDING_TIME_SECONDS){
-                    Log.i(TAG,TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()-startTime)+" Seconds");
-                    isRecordingImg = false;
                     stopRecordingVideo();
-                    Log.i(TAG, "Bitmap recording stopped");
-                    timer_image.cancel();
-                    clearTexts();
                 }
             }
-        }, 0, 1000/FPS);
-
-        timer_sensor.scheduleAtFixedRate(new TimerTask() {
+        };
+    }
+    private void stopRecordingSensor() {
+        isRecordingSns = false;
+        if (recording_sensor != null) {
+            for (int i = 0; i < recording_sensor.size(); i++) {
+                FileUtils.saveSensor(recording_sensor.get(i).x, recording_sensor.get(i).y,
+                        recording_sensor.get(i).z, recording_sensor.get(i).cur_activity,
+                        sensorFile);
+            }
+        }
+        sensorFile = null;
+        recording_sensor = new ArrayList<>();
+        timer_recording_sensor.cancel();
+        Log.i(TAG, "Sensor recording stopped");
+    }
+    private TimerTask sensorRecordingTask(){
+        return new TimerTask() {
             @Override
             public void run() {
-
                 if (recording_sensor == null) {
                     recording_sensor = new ArrayList<>();
                 }
-
-                if(recording_sensor.size() < HERTZ * TOTAL_RECORDING_TIME_SECONDS)
+                if (recording_sensor.size() < HERTZ * TOTAL_RECORDING_TIME_SECONDS)
                     recording_sensor.add(curSensorValues);
 
                 if (recording_sensor.size() == HERTZ * TOTAL_RECORDING_TIME_SECONDS) {
-                    isRecordingSns = false;
-                    if(recording_sensor!=null) {
-                        for (int i = 0; i < recording_sensor.size() ; i++) {
-                            FileUtils.saveSensor(recording_sensor.get(i).x,recording_sensor.get(i).y,
-                                    recording_sensor.get(i).z, recording_sensor.get(i).cur_activity,
-                                    sensorFile);
-                        }
-                    }
-                    sensorFile = null;
-                    recording_sensor = new ArrayList<>();
-                    timer_sensor.cancel();
-                    Log.i(TAG, "Sensor recording stopped");
+                    stopRecordingSensor();
                 }
             }
-        }, 0, 1000/HERTZ);
+        };
+    }
+
+    private void startPredicting(){
+        if(isRecordingImg){
+            stopRecordingVideo();
+        }
+        if(isRecordingSns){
+            stopRecordingSensor();
+        }
+        timer_image_classifier = new Timer();
+        timer_image_classifier.scheduleAtFixedRate(imageClassifyingTask(), 1000, 1000/FPS);
+        isClassifyingImg = true;
+
+        timer_sensor_classifier = new Timer();
+        timer_sensor_classifier.scheduleAtFixedRate(sensorClassifyingTask(), 1000, 1000/HERTZ);
+        isClassifyingSns = true;
+    }
+    private void stopPredicting() {
+
+
+        if(isClassifyingSns && timer_image_classifier!=null){
+            timer_image_classifier.cancel();
+            isClassifyingSns = false;
+        }
+
+        if(isClassifyingImg && timer_sensor_classifier!=null){
+            timer_sensor_classifier.cancel();
+            isClassifyingImg = false;
+        }
+
+    }
+
+    private void startRecording(){
+
+        recording_name = "REC_"+System.currentTimeMillis();
+        sensorFile = createSensorFile();
+
+        cur_activity = 0;
+
+        startRecordingVideo();
+
+        isRecordingSns = true;
+        isRecordingImg = true;
+        images_saved = 0;
+
+        timer_recording_image = new Timer();
+        timer_recording_sensor = new Timer();
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(TEXT_TO_SPEECH)
+                    textToSpeech.speak("Recording started", TextToSpeech.QUEUE_ADD, null, Integer.toString(new Random().nextInt()));
+            }
+        });
+        timer_recording_image.scheduleAtFixedRate(imageRecordingTask(), 0, 1000/FPS);
+
+        timer_recording_sensor.scheduleAtFixedRate(sensorRecordingTask(), 0, 1000/HERTZ);
 
         Log.i(TAG, "Recording Started");
     }
@@ -462,13 +628,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         mRgba = inputFrame.rgba();
         Core.flip(mRgba, mRgba, -1);
 
-        //Log.i(TAG,"Difference: "+diff);
-        byte[] byteFrame = new byte[(int) (mRgba.total() * mRgba.channels())];
-
-        mRgba.get(0, 0, byteFrame);
-        last_image = byteFrame;
-
-
         if(CUR_STATE.equals(RECORDING)){
             if(!status_aux.getText().equals(""))
                 runOnUiThread(new Runnable() {
@@ -479,21 +638,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 });
         }
 
-        if(CUR_STATE.equals(PREDICTING)) {
-            int x = (mRgba.width()/2) - (ImageClassifier.INPUT_SIZE/2);
-            int y = (mRgba.height()/2) - (ImageClassifier.INPUT_SIZE/2);
 
-            Rect roi = new Rect(x, y, ImageClassifier.INPUT_SIZE, ImageClassifier.INPUT_SIZE);
-
-            Mat cropped = new Mat(mRgba, roi);
-
-            try {
-                if(frames!=null)
-                    frames.put(cropped);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
 
         return mRgba;
     }
@@ -544,69 +689,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     @Override
     public void onSensorChanged(SensorEvent event) {
 
-
-        if(CUR_STATE.equals(PREDICTING))
-            activityPrediction();
-
-
-        x.add(event.values[0]);
-        y.add(event.values[1]);
-        z.add(event.values[2]);
-
         curSensorValues = new SensorXYZ();
         curSensorValues.x = event.values[0];
         curSensorValues.y = event.values[1];
         curSensorValues.z = event.values[2];
         curSensorValues.cur_activity = new Integer(cur_activity);
 
-
-
-
-    }
-    private void activityPrediction() {
-        //Log.i(TAG,"Predicting activity from sensor");
-        if(x.size() > N_SAMPLES || y.size() > N_SAMPLES || z.size() > N_SAMPLES){
-            x.clear();
-            y.clear();
-            z.clear();
-        }
-        if (x.size() == N_SAMPLES && y.size() == N_SAMPLES
-                && z.size() == N_SAMPLES && CUR_STATE.equals(PREDICTING) ) {
-
-            List<Float> data = new ArrayList<>();
-            data.addAll(x);
-            data.addAll(y);
-            data.addAll(z);
-
-            results = classifier.predictProbabilities(ClassifierUtils.toFloatArray(data));
-
-            if(results != null && results.length > 0) {
-                float max = -1;
-                int idx = -1;
-                for (int i = 0; i < results.length; i++) {
-                    if (results[i] > max) {
-                        idx = i;
-                        max = results[i];
-                    }
-                }
-                sensor_label = labels[idx];
-                sensor_prob = Float.toString(max);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.i(TAG, "Updating sensor label");
-                        status.setText(sensor_label);
-                    }
-                });
-
-                //cur_activity_prob.setText(sensor_prob);
-
-            }
-
-            x.clear();
-            y.clear();
-            z.clear();
-        }
     }
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
@@ -628,6 +716,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     }
 
     private void stopRecordingVideo() {
+        Log.i(TAG,TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()-startTime)+" Seconds");
+        isRecordingImg = false;
 
         if(recorder != null) {
 
@@ -640,6 +730,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 e.printStackTrace();
             }
         }
+        Log.i(TAG, "Bitmap recording stopped");
+        timer_recording_image.cancel();
+        clearTexts();
     }
 
 
