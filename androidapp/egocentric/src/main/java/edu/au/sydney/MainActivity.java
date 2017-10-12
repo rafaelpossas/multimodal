@@ -1,7 +1,6 @@
 package edu.au.sydney;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -80,7 +79,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     protected ImageClassifier image_classifier;
 
     private static final long TIMEOUT = 1000L;
-    public static Integer TOTAL_RECORDING_TIME_SECONDS = 10;
+    public static Integer TOTAL_RECORDING_TIME_SECONDS = 300;
+    public static Double SECONDS_TO_WARN = 40.0;
     public static Integer FPS = 15;
     public static Integer HERTZ = 15;
 
@@ -96,10 +96,16 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private FFmpegFrameRecorder recorder;
     private Frame yuvImage = null;
 
-    private List<SensorXYZ> recording_sensor;
-    private List<Float> x;
-    private List<Float> y;
-    private List<Float> z;
+    private List<SensorXYZ> recording_acc;
+    private List<SensorXYZ> recording_gyr;
+
+    private List<Float> x_acc;
+    private List<Float> y_acc;
+    private List<Float> z_acc;
+
+    private List<Float> x_gyr;
+    private List<Float> y_gyr;
+    private List<Float> z_gyr;
 
     private BlockingQueue<Mat> frames;
 
@@ -123,7 +129,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private Handler handler;
     private HandlerThread handlerThread;
 
-    private File sensorFile = null;
+    private File accFile = null;
+    private File gyrFile = null;
 
     private Timer timer_recording_image;
     private Timer timer_recording_sensor;
@@ -143,7 +150,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private int cur_activity;
 
 
-    private SensorXYZ curSensorValues;
+    private SensorXYZ curAccValues;
+    private SensorXYZ curGyroValues;
 
     //protected String[] labels = {"Downstairs", "Jogging", "Sitting", "Standing", "Upstairs", "Walking"};
 
@@ -173,9 +181,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         textToSpeech = new TextToSpeech(this, this);
         textToSpeech.setLanguage(Locale.US);
         frames = new LinkedBlockingQueue<Mat>();
-        x = new ArrayList<>();
-        y = new ArrayList<>();
-        z = new ArrayList<>();
+        x_acc = new ArrayList<>();
+        y_acc = new ArrayList<>();
+        z_acc = new ArrayList<>();
+
+        x_gyr = new ArrayList<>();
+        y_gyr = new ArrayList<>();
+        z_gyr = new ArrayList<>();
 
     }
 
@@ -299,9 +311,14 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
             frames = null;
 
-            x.clear();
-            y.clear();
-            z.clear();
+            x_acc.clear();
+            y_acc.clear();
+            z_acc.clear();
+
+            x_gyr.clear();
+            y_gyr.clear();
+            z_gyr.clear();
+
             if (!isFinishing()) {
                 Log.i(TAG, "Requesting finish");
                 finish();
@@ -332,6 +349,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 startPredicting();
             }
             getSensorManager().registerListener(this, getSensorManager().getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_FASTEST);
+            getSensorManager().registerListener(this, getSensorManager().getDefaultSensor(Sensor.TYPE_GYROSCOPE), SensorManager.SENSOR_DELAY_FASTEST);
 
             if (!OpenCVLoader.initDebug()) {
                 Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
@@ -408,24 +426,33 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         return new TimerTask() {
             @Override
             public void run() {
-                x.add(curSensorValues.x);
-                y.add(curSensorValues.y);
-                z.add(curSensorValues.z);
+                x_acc.add(curAccValues.x);
+                y_acc.add(curAccValues.y);
+                z_acc.add(curAccValues.z);
+
+                x_gyr.add(curGyroValues.x);
+                y_gyr.add(curGyroValues.y);
+                z_gyr.add(curGyroValues.z);
 
                 if(CUR_STATE.equals(PREDICTING)) {
                     //Log.i(TAG,"Predicting activity from sensor");
-                    if (x.size() > N_SAMPLES || y.size() > N_SAMPLES || z.size() > N_SAMPLES) {
-                        x.clear();
-                        y.clear();
-                        z.clear();
+                    if (x_acc.size() > N_SAMPLES || y_acc.size() > N_SAMPLES || z_acc.size() > N_SAMPLES) {
+
+                        x_acc.clear();
+                        y_acc.clear();
+                        z_acc.clear();
+
+                        x_gyr.clear();
+                        y_gyr.clear();
+                        z_gyr.clear();
                     }
-                    if (x.size() == N_SAMPLES && y.size() == N_SAMPLES
-                            && z.size() == N_SAMPLES && CUR_STATE.equals(PREDICTING)) {
+                    if (x_acc.size() == N_SAMPLES && y_acc.size() == N_SAMPLES
+                            && z_acc.size() == N_SAMPLES && CUR_STATE.equals(PREDICTING)) {
 
                         List<Float> data = new ArrayList<>();
-                        data.addAll(x);
-                        data.addAll(y);
-                        data.addAll(z);
+                        data.addAll(x_acc);
+                        data.addAll(y_acc);
+                        data.addAll(z_acc);
 
                         results = classifier.predictProbabilities(ClassifierUtils.toFloatArray(data));
 
@@ -452,9 +479,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
                         }
 
-                        x.clear();
-                        y.clear();
-                        z.clear();
+                        x_acc.clear();
+                        y_acc.clear();
+                        z_acc.clear();
+
+                        x_gyr.clear();
+                        y_gyr.clear();
+                        z_gyr.clear();
                     }
                 }
 
@@ -468,7 +499,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        status.setText("Recording ("+images_saved/FPS+")");
+                        status.setText("Recording ("+images_saved / FPS+")");
+                        if(TEXT_TO_SPEECH && TOTAL_RECORDING_TIME_SECONDS - (images_saved * 1.0 / FPS) == SECONDS_TO_WARN){
+                            textToSpeech.speak(SECONDS_TO_WARN.intValue() + " Seconds Left", TextToSpeech.QUEUE_ADD, null, Integer.toString(new Random().nextInt()));
+                        }
                     }
                 });
 
@@ -482,21 +516,32 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
 
                 if(images_saved == FPS * TOTAL_RECORDING_TIME_SECONDS){
                     stopRecordingVideo();
+                    if(TEXT_TO_SPEECH)
+                        textToSpeech.speak("Recording Stopped", TextToSpeech.QUEUE_ADD, null, Integer.toString(new Random().nextInt()));
                 }
             }
         };
     }
     private void stopRecordingSensor() {
         isRecordingSns = false;
-        if (recording_sensor != null) {
-            for (int i = 0; i < recording_sensor.size(); i++) {
-                FileUtils.saveSensor(recording_sensor.get(i).x, recording_sensor.get(i).y,
-                        recording_sensor.get(i).z, recording_sensor.get(i).cur_activity,
-                        sensorFile);
+        if (recording_acc != null) {
+            for (int i = 0; i < recording_acc.size(); i++) {
+                FileUtils.saveSensor(recording_acc.get(i).x, recording_acc.get(i).y,
+                        recording_acc.get(i).z, recording_acc.get(i).cur_activity,
+                        accFile);
             }
         }
-        sensorFile = null;
-        recording_sensor = new ArrayList<>();
+        if (recording_gyr != null) {
+            for (int i = 0; i < recording_gyr.size(); i++) {
+                FileUtils.saveSensor(recording_gyr.get(i).x, recording_gyr.get(i).y,
+                        recording_gyr.get(i).z, recording_gyr.get(i).cur_activity,
+                        gyrFile);
+            }
+        }
+        accFile = null;
+        gyrFile = null;
+        recording_acc = new ArrayList<>();
+        recording_gyr = new ArrayList<>();
         timer_recording_sensor.cancel();
         Log.i(TAG, "Sensor recording stopped");
     }
@@ -504,13 +549,23 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
         return new TimerTask() {
             @Override
             public void run() {
-                if (recording_sensor == null) {
-                    recording_sensor = new ArrayList<>();
+                if (recording_acc == null) {
+                    recording_acc = new ArrayList<>();
                 }
-                if (recording_sensor.size() < HERTZ * TOTAL_RECORDING_TIME_SECONDS)
-                    recording_sensor.add(curSensorValues);
+                if (recording_gyr == null) {
+                    recording_gyr = new ArrayList<>();
+                }
+                if (recording_acc.size() < HERTZ * TOTAL_RECORDING_TIME_SECONDS) {
+                    if(curAccValues!=null)
+                        recording_acc.add(curAccValues);
+                }
+                if(recording_gyr.size() < HERTZ * TOTAL_RECORDING_TIME_SECONDS) {
+                    if(curGyroValues!=null)
+                        recording_gyr.add(curGyroValues);
+                }
 
-                if (recording_sensor.size() == HERTZ * TOTAL_RECORDING_TIME_SECONDS) {
+                if (recording_acc.size() == HERTZ * TOTAL_RECORDING_TIME_SECONDS ||
+                        recording_gyr.size() == HERTZ * TOTAL_RECORDING_TIME_SECONDS) {
                     stopRecordingSensor();
                 }
             }
@@ -534,7 +589,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     }
     private void stopPredicting() {
 
-
         if(isClassifyingSns && timer_image_classifier!=null){
             timer_image_classifier.cancel();
             isClassifyingSns = false;
@@ -550,7 +604,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     private void startRecording(){
 
         recording_name = "REC_"+System.currentTimeMillis();
-        sensorFile = createSensorFile();
+        accFile = createSensorFile("ACC");
+        gyrFile = createSensorFile("GYR");
 
         cur_activity = 0;
 
@@ -578,9 +633,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     }
 
 
-    private File createSensorFile() {
+    private File createSensorFile(String sensor_type) {
         String directory = recording_name;
-        String filename = recording_name +".txt";
+        String filename = sensor_type+"_"+recording_name +".txt";
         final String root =
                 Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "egocentric" + File.separator + directory;
 
@@ -606,8 +661,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
                     if(startTime == null){
                         startTime = System.currentTimeMillis();
                     }
-                    long videoTimestamp = 1000 * (System.currentTimeMillis() - startTime);
-                    recorder.setTimestamp(videoTimestamp);
+                    //long videoTimestamp = 1000 * (System.currentTimeMillis() - startTime);
+                    //recorder.setTimestamp(videoTimestamp);
                     recorder.record(frame);
                     recorded_images++;
 
@@ -658,6 +713,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
             Log.i(TAG,"Touch pad button released");
             if(isRecordingImg){
                 cur_activity++;
+                textToSpeech.speak("Activity Changed", TextToSpeech.QUEUE_ADD, null, Integer.toString(new Random().nextInt()));
             }else{
                 final ScheduledExecutorService exec = Executors.newScheduledThreadPool(1);
                 if(TEXT_TO_SPEECH)
@@ -688,12 +744,20 @@ public class MainActivity extends Activity implements CvCameraViewListener2, Sen
     }
     @Override
     public void onSensorChanged(SensorEvent event) {
+        if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
+            curAccValues = new SensorXYZ();
+            curAccValues.x = event.values[0];
+            curAccValues.y = event.values[1];
+            curAccValues.z = event.values[2];
+            curAccValues.cur_activity = new Integer(cur_activity);
+        }else if(event.sensor.getType() == Sensor.TYPE_GYROSCOPE){
+            curGyroValues = new SensorXYZ();
+            curGyroValues.x = event.values[0];
+            curGyroValues.y = event.values[1];
+            curGyroValues.z = event.values[2];
+            curGyroValues.cur_activity = new Integer(cur_activity);
+        }
 
-        curSensorValues = new SensorXYZ();
-        curSensorValues.x = event.values[0];
-        curSensorValues.y = event.values[1];
-        curSensorValues.z = event.values[2];
-        curSensorValues.cur_activity = new Integer(cur_activity);
 
     }
     @Override

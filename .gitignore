@@ -94,7 +94,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
+src
 multimodal_dataset/
 src/data/
 uci_cleaned/
@@ -103,3 +103,4 @@ checkpoints/
 .idea/
 .pyc
 .DS_Store
+src/vuzix

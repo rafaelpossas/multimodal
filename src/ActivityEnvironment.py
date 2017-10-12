@@ -1,8 +1,8 @@
 import h5py
 import numpy as np
-from MultimodalDataset import MultimodalDataset
-from SensorAgent import SensorAgent
-from VisionAgent import VisionAgent
+from src.MultimodalDataset import MultimodalDataset
+from src.SensorAgent import SensorAgent
+from src.VisionAgent import VisionAgent
 import random
 import queue as q
 
@@ -224,10 +224,10 @@ class ActivityEnvironment(object):
 #
 # sess.close()
 
-if __name__ == "__main__":
-    env = ActivityEnvironment(dataset_file='multimodal_full_test.hdf5',
-                              sensor_model_weights='sensor_model.hdf5',
-                              vision_model_weights='checkpoints/inception.029-1.08.hdf5',
-                              split=False)
-    env.sensor_agent.model.save('sensor_weights_and_model.hdf5')
-    env.vision_agent.model.save('vision_weights_and_model.hdf5')
+# if __name__ == "__main__":
+#     env = ActivityEnvironment(dataset_file='multimodal_full_test.hdf5',
+#                               sensor_model_weights='sensor_model.hdf5',
+#                               vision_model_weights='checkpoints/inception.029-1.08.hdf5',
+#                               split=False)
+#     env.sensor_agent.model.save('sensor_weights_and_model.hdf5')
+#     env.vision_agent.model.save('vision_weights_and_model.hdf5')

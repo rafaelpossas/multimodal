@@ -1,19 +1,10 @@
 
-from src.CNNFBF import CNNFBF
-from src.LSTM import SensorLSTM
-import h5py
 from scipy.stats import mode
-import numpy as np
 
-from src.MultimodalDataset import MultimodalDataset
-from src.PredictiveAgent import PredictiveAgent
 from keras.applications.inception_v3 import InceptionV3
 from keras.layers import Dense, GlobalAveragePooling2D
 from keras.models import Model
-import h5py
 import numpy as np
-import tensorflow as tf
-import keras
 
 
 class VisionAgent(object):

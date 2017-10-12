@@ -3,7 +3,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Reshape, Flatten, LSTM
 from keras.optimizers import Adam
-from ActivityEnvironment import ActivityEnvironment
+from src.ActivityEnvironment import ActivityEnvironment
 import h5py
 import logging
 import datetime
@@ -124,9 +124,9 @@ def evaluate_policy(dataset_file="multimodal_full_test.hdf5", agent_weights='act
     return ((true_preds.sum()/len(true_y))*100)
 
 def train_policy():
-    env = ActivityEnvironment(dataset_file='multimodal_full_test.hdf5',
-                              sensor_model_weights='sensor_model.hdf5',
-                              vision_model_weights='checkpoints/inception.029-1.08.hdf5',
+    env = ActivityEnvironment(dataset_file='data/multimodal_full_test.hdf5',
+                              sensor_model_weights='models/sensor_model.hdf5',
+                              vision_model_weights='models/vision_weights_and_model.hdf5',
                               split=False)
     current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
     logger = logging.getLogger(__name__)

@@ -120,7 +120,8 @@ class MultimodalDataset(object):
 
     def split_windows(self, group_size, step_size, X, y):
         number_groups = int(((X.shape[1]-group_size)/step_size)+1)
-        split_xy = [(X[j, i:i + group_size], y[j]) for j in range(len(X)) for i in range(0, number_groups * step_size, step_size)]
+        split_xy = [(X[j, i:i + group_size], y[j])
+                    for j in range(len(X)) for i in range(0, number_groups * step_size, step_size)]
         split_x = np.array([x[0] for x in split_xy])
         split_y = np.array([y[1] for y in split_xy])
         return split_x, split_y

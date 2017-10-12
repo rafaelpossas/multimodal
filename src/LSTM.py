@@ -64,7 +64,7 @@ class RegressionLSTM:
 
 class SensorLSTM:
 
-    def train_model(self, train_file=None, test_file=None, chunk_size=5,step_size=1):
+    def train_model(self, train_file=None, test_file=None, chunk_size=5, step_size=1):
 
         # scaler = MinMaxScaler()
         train_file = h5py.File(train_file)
@@ -97,10 +97,10 @@ class SensorLSTM:
                                            output_shape=train_onehot_y.shape[1], dropout=0.4, layer_size=64,
                                            optimizer=rmsprop)
         # model_lstm.load_weights('models/65.00_accx_accy_accz_rmsprop_64_75_0.4.hdf5')
-        #model_lstm.fit(train_sns_x, train_onehot_y, batch_size=100, epochs=1000,
-        #                validation_data=(test_sns_x, test_onehot_y), callbacks=[earlystopping, model_checkpoint], verbose=2)
-        model_lstm.load_weights("sensor_model.hdf5")
-        print(model_lstm.evaluate(test_sns_x, test_onehot_y))
+        model_lstm.fit(train_sns_x, train_onehot_y, batch_size=1000, epochs=1000,
+                        validation_data=(test_sns_x, test_onehot_y), callbacks=[earlystopping, model_checkpoint], verbose=2)
+        #model_lstm.load_weights("sensor_model.hdf5")
+        #print(model_lstm.evaluate(test_sns_x, test_onehot_y))
         return model_lstm
 
     def get_model(self, input_shape, output_shape, layer_size=128, optimizer='rmsprop', dropout=0.2):
@@ -188,4 +188,4 @@ class AutoencoderLSTM:
 if __name__=='__main__':
     sns_lst = SensorLSTM()
     sns_lst.train_model(train_file='data/multimodal_full_train.hdf5',
-                        test_file="data/multimodal_full_test.hdf5", chunk_size=30, step_size=1)
+                        test_file="data/multimodal_full_test.hdf5", chunk_size=50, step_size=1)
