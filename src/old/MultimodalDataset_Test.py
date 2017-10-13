@@ -93,5 +93,5 @@ def create_dataset(sensors):
                                     sensors=sensors,
                                      output_file='multimodal_full_test.hdf5')
 if __name__=='__main__':
-    create_dataset(['grax','gray','graz','gyrx','gyry','gyrz','lacx','lacy','lacz'])
+    create_dataset(['accx','accy','accz','gyrx','gyry','gyrz'])
     #train_model()

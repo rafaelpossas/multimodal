@@ -141,7 +141,7 @@ def extract_files(test_seqs=['seq05']):
     `ffmpeg -i video.mpg image-%04d.jpg`
     """
     data_file = []
-    folders = ['../../multimodal_dataset/video']
+    folders = ['../multimodal_dataset/video']
     for folder in folders:
         class_folders = glob.glob(folder + '*')
 

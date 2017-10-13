@@ -5,7 +5,7 @@ from keras.applications.inception_v3 import InceptionV3
 from keras.layers import Dense, GlobalAveragePooling2D
 from keras.models import Model
 import numpy as np
-
+import h5py
 
 class VisionAgent(object):
 
@@ -16,6 +16,34 @@ class VisionAgent(object):
         if model_weights is not None:
             self.model = self._get_model(model_weights)
             self.model.load_weights(model_weights)
+
+    def image_generator(self, file, batch_size, num_frames):
+        import random
+        current_index = 0
+        total_size = file['x_img'].shape[0]
+        num_frames_per_sample = file['x_img'].shape[1]
+        batch_index = 0
+        while True:
+            if current_index >= total_size:
+                current_index = 0
+
+            index = range(current_index, current_index+batch_size)
+            x = file['x_img'][index]
+            y = file['y'][index]
+            x = x.reshape(x.shape[0]*x.shape[1], x.shape[2], x.shape[3], x.shape[4])
+            y = np.eye(20)[np.repeat(y, num_frames_per_sample).astype(int)]
+            x = x / 255.0
+
+            rand_ix = [random.randint(0, total_size) for _ in range(num_frames)]
+            frames = x[rand_ix]
+            frames_y = y[rand_ix]
+            batch_index += num_frames
+            print("Batch Index {}".format(batch_index))
+
+
+            current_index += batch_size
+
+            yield frames, frames_y
 
     def predict(self, x, num_samples=15):
         if self.model is not None:
@@ -52,6 +80,16 @@ class VisionAgent(object):
         scores = model.evaluate(dataset.x_test, dataset.y_test, verbose=verbose)
         return scores
 
+if __name__ == '__main__':
+    vision_agent = VisionAgent()
+    vs_model = vision_agent._get_model()
+    train_file = h5py.File('data/multimodal_full_train.hdf5')
+    test_file = h5py.File("data/multimodal_full_test.hdf5")
+    vs_model.fit_generator(
+        vision_agent.image_generator(train_file, batch_size=1, num_frames=25),
+        steps_per_epoch=1,
+        max_queue_size=1,
+        epochs=100)
 
 #
 # def get_image_prediction(x, cnn_model=None, num_samples=15):

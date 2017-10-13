@@ -216,10 +216,17 @@ class MultimodalDataset(object):
         y_img = []
         x_sensor = []
         y_sensor = []
+        hf = h5py.File(output_file, "w")
+
+        x_img_h5 = hf.create_dataset("x_img", shape=(0, 450,224, 224, 3), maxshape=(None, 450, 224, 224, 3))
+        y_h5 = hf.create_dataset("y", shape=(0,), maxshape=(None,))
+        x_sns_h5 = hf.create_dataset("x_sns", shape=(0, 150, 6), maxshape=(None,150, 6))
+        global_ix = 1
         for path, subdirs, files in os.walk(image_root):
             if len(subdirs) > 0:
                 print("Current Path: " + path)
-            for seq in subdirs:
+
+            for ix, seq in enumerate(subdirs):
                 cur_class = []
                 cur_image = []
 
@@ -228,7 +235,7 @@ class MultimodalDataset(object):
                 if len(files) > 0:
                     print("Creating images for: " + seq)
 
-                for ix, name in enumerate(files):
+                for name in files:
                     if ix < image_total_samples:
                         cur_image = cv2.resize(cv2.imread(name), (224, 224))
                         cur_class.append(cur_image)
@@ -256,20 +263,30 @@ class MultimodalDataset(object):
                         x_sensor.append(cur_sensor_x)
                         y_sensor.append(self.activity_dict[path.split('/')[-1]][0])
 
-                    print(np.array(x_img).shape)
-                    print(np.array(y_img).shape)
-                    print(np.array(x_sensor).shape)
-                    print(np.array(y_sensor).shape)
+                    if global_ix !=0 and global_ix % 10 == 0:
+                        cur_ix = x_img_h5.shape[0]
+                        x_img_h5.resize((cur_ix+10, 450, 224,224, 3))
+                        x_sns_h5.resize((cur_ix+10, 150, 6))
+                        y_h5.resize((cur_ix+10,))
 
+                        x_img_h5[cur_ix:] = x_img
+                        x_sns_h5[cur_ix:] = x_sensor
+                        y_h5[cur_ix:] = y_sensor
+                        x_img = []
+                        x_sensor = []
+                        y_sensor = []
+
+                    global_ix += 1
+
+                    print(x_img_h5.shape)
+                    print(x_sns_h5.shape)
+                    print(y_h5.shape)
+        hf.close()
         # x, y = shuffle(x, y)
         if len(x_sensor) != len(x_img):
             raise Exception("Dataset sizes do not match")
 
-        with h5py.File(output_file, "w") as hf:
-            hf.create_dataset("x_img", data=x_img)
-            hf.create_dataset("y_img", data=y_img)
-            hf.create_dataset("x_sns", data=x_sensor)
-            hf.create_dataset("y_sns", data=y_sensor)
+
 
             # if len(x) > 0:
             #     print(min([len(p) for p in x]))
