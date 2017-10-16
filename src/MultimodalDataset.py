@@ -190,8 +190,62 @@ class MultimodalDataset(object):
             # x = []
             # y = []
         return x, y
+    @staticmethod
+    def get_activities_by_index(act_indexes):
+        act_str_arr = []
 
-    def load_multimodal_dataset(self, chunk_size, step_size, image_root, sensor_root,
+        for act_ix in act_indexes:
+            if act_ix < 10:
+                act_str = "act0" + str(act_ix)
+            else:
+                act_str = "act" + str(act_ix)
+            act_str_arr.append(act_str)
+
+        return act_str_arr
+    @staticmethod
+    def get_total_size(image_root):
+        activities = glob.glob(os.path.join(image_root, '*'))
+        counter = 0
+        for act in activities:
+            seqs = glob.glob(os.path.join(act, '*', '*.jpg'))
+            counter += len(seqs)
+        return counter
+
+    def load_or_convert_images(self, image_root, act_indexes, chunk_size, convert=False, load_downsampled=True, normalize=True):
+        act_str_arr = MultimodalDataset.get_activities_by_index(act_indexes)
+        x = np.zeros((9, 450, 224, 224, 3))
+        y = []
+        for act_str in act_str_arr:
+            path = os.path.join(image_root, act_str)
+            all_seq = glob.glob(os.path.join(path, '*'))
+            for seq_ix, seq in enumerate(sorted(all_seq)):
+                files = glob.glob(os.path.join(seq, '*.jpg'))
+                for img_ix, img in enumerate(sorted(files)):
+                    if img_ix < chunk_size:
+                        file_name = img.split(os.path.sep)[-1]
+                        dir_downsampled = os.path.join(seq, 'downsampled')
+                        full_path_downsampled = os.path.join(dir_downsampled, file_name)
+                        if convert:
+                            cur_image = cv2.resize(cv2.imread(img), (224, 224))
+                            if not os.path.exists(dir_downsampled):
+                                os.mkdir(dir_downsampled)
+                            cv2.imwrite(full_path_downsampled, cur_image)
+                        else:
+                            if load_downsampled:
+                                cur_img = cv2.imread(full_path_downsampled)
+                            else:
+                                cur_img = cv2.imread(img)
+
+                            if normalize:
+                                cur_img = cur_img / 255.0
+
+                            x[seq_ix][img_ix] = cur_img
+
+                y.append(np.repeat(self.activity_dict[act_str][0], chunk_size))
+
+        return x, np.array(y)
+
+    def generate_hdf5(self, chunk_size, step_size, image_root, sensor_root,
                                 sensors=['accx', 'accy', 'accz'], output_file='multimodal.hdf5',
                                 sensor_total_samples=150, image_total_samples=450):
 

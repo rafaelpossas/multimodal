@@ -4,24 +4,36 @@ from keras.models import Model
 from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 import numpy as np
-import h5py
+from src.MultimodalDataset import MultimodalDataset
+import os
+import glob
+import cv2
+import math
 import random
 
 class CNNFBF(object):
 
-    def __init__(self, train_file='train_activity_frames.hdf5', test_file='test_activity_frames.hdf5', ):
+    def __init__(self, train_root='multimodal_dataset/video/images/train',
+                 test_root='multimodal_dataset/video/images/test',
+                 chunk_size=450):
+
         self.checkpointer = ModelCheckpoint(
-            filepath='/checkpoints/inception.{epoch:03d}-{val_loss:.2f}.hdf5',
-            verbose=1,
+            filepath='checkpoints/inception.{epoch:03d}-{val_acc:.2f}.hdf5',
+            verbose=2,
+            monitor='val_acc',
             save_best_only=True)
 
         # Helper: Stop when we stop learning.
-        self.early_stopper = EarlyStopping(patience=10)
+        self.early_stopper = EarlyStopping(patience=5)
 
-        self.tensorboard = TensorBoard(log_dir='./logs/')
+        self.tensorboard = TensorBoard(log_dir='./logs/cnn')
 
-        self.f_train = h5py.File(train_file)
-        self.f_test = h5py.File(test_file)
+        self.dataset = MultimodalDataset()
+        self.train_root = train_root
+        self.test_root = test_root
+        self.chunk_size = chunk_size
+        self.total_train_size = self.dataset.get_total_size(train_root, chunk_size=self.chunk_size)
+        self.total_test_size = self.dataset.get_total_size(test_root, chunk_size=self.chunk_size)
         self.num_frames_per_sample = 15
 
     def get_model(self, num_classes, weights=None):
@@ -119,9 +131,9 @@ class CNNFBF(object):
         # we need to recompile the model for these modifications to take effect
         # we use SGD with a low learning rate
         model.compile(
-            optimizer=SGD(lr=0.0001, momentum=0.9),
+            optimizer=SGD(lr=0.001, momentum=0.9),
             loss='categorical_crossentropy',
-            metrics=['accuracy', 'top_k_categorical_accuracy'])
+            metrics=['accuracy'])
 
         return model
 
@@ -137,52 +149,78 @@ class CNNFBF(object):
                 cur_frame_index = 0
             yield x, y
 
-    def batch_generator(self, file, batch_size=1, num_frames=10):
-
-        current_index = 0
-        total_size = file['x_img'].shape[0]
-        index = range(current_index, current_index + batch_size)
-
-        def get_new_batch(index):
-
-            x = file['x_img'][index]
-            y = file['y'][index]
-
-            num_frames_per_sample = x.shape[1]
-            x = x.reshape(x.shape[0] * x.shape[1], x.shape[2], x.shape[3], x.shape[4])
-            y = np.eye(20)[np.repeat(y, num_frames_per_sample).astype(int)]
-            x = x.astype("float") / 255.0
-
-            return x, y
-
-        x, y = get_new_batch(index)
-        current_index += 1
-        cur_frame_index = 0
+    def batch_generator(self, root, num_frames=10, max_frames_per_seq=450):
+        act_str_arr = self.dataset.get_activities_by_index(range(1, 21))
+        x = []
+        y = []
         while True:
-            if current_index >= total_size:
-                current_index = 0
+            for act_str in act_str_arr:
+                path = os.path.join(root, act_str)
+                all_seq = glob.glob(os.path.join(path, '*'))
+                for seq_ix, seq in enumerate(sorted(all_seq)):
+                    files = glob.glob(os.path.join(seq, '*.jpg'))
+                    for img_ix, img in enumerate(sorted(files)):
+                        if img_ix < max_frames_per_seq:
+                            file_name = img.split(os.path.sep)[-1]
+                            dir_downsampled = os.path.join(seq, 'downsampled')
+                            full_path_downsampled = os.path.join(dir_downsampled, file_name)
 
-            batch_x, batch_y = next(self.frame_generator(x, y, num_frames, x.shape[0], cur_frame_index))
-            cur_frame_index += num_frames
+                            cur_img = cv2.imread(full_path_downsampled)
 
-            if batch_x is None and batch_y is None:
-                index = range(current_index, current_index + batch_size)
-                x, y = get_new_batch(index)
-                cur_frame_index = 0
-                batch_x, batch_y = next(self.frame_generator(x, y, num_frames, x.shape[0], cur_frame_index))
-                current_index += 1
+                            cur_img = cur_img / 255.0
 
+                            x.append(cur_img)
 
-            yield batch_x, batch_y
+                            y.append(self.dataset.activity_dict[act_str][0])
+
+                            if len(x) == num_frames:
+                                yield np.array(x), np.eye(20)[np.array(y).astype(int)]
+                                x, y = ([], [])
+        # cur_activity_index = 0
+        # global_index = 1
+        #
+        # index = list(range(global_index, global_index + batch_size))
+        #
+        # def get_new_batch(index):
+        #
+        #     x, y = self.dataset.load_or_convert_images(root, index, self.chunk_size)
+        #
+        #     y = np.eye(20)[y.astype(int)]
+        #
+        #     return x, y
+        #
+        # x, y = get_new_batch(index)
+        #
+        # cur_frame_index = 0
+        # while True:
+        #
+        #     batch_x, batch_y = next(self.frame_generator(x[cur_activity_index], y[cur_activity_index],
+        #                                                  num_frames, x.shape[1], cur_frame_index))
+        #     cur_frame_index += num_frames
+        #
+        #     if batch_x is None and batch_y is None:
+        #         cur_frame_index = 0
+        #         cur_activity_index += 1
+        #         if cur_activity_index == x.shape[0]:
+        #             print("Global Index {}".format(global_index))
+        #             global_index = global_index +1 if global_index < 20 else 1
+        #             index = list(range(global_index, global_index + batch_size))
+        #             x, y = get_new_batch(index)
+        #             cur_activity_index = 0
+        #
+        #         batch_x, batch_y = next(self.frame_generator(x[cur_activity_index], y[cur_activity_index], num_frames, x.shape[1], cur_frame_index))
+        #
+        #
+        #     yield batch_x, batch_y
 
     def fit(self, model, nb_epoch, generator, callbacks=[], num_frames_per_batch = 10):
-        steps_per_epoch = self.f_train['x_img'].shape[0] * (self.f_train['x_img'].shape[1]/num_frames_per_batch)
-        steps_per_epoch_val = self.f_test['x_img'].shape[0] * (self.f_test['x_img'].shape[1]/num_frames_per_batch)
+        steps_per_epoch = math.ceil((self.total_train_size) / num_frames_per_batch)
+        steps_per_epoch_val = math.ceil((self.total_test_size) / num_frames_per_batch)
 
         model.fit_generator(
-            generator(self.f_train, num_frames=num_frames_per_batch),
+            generator(self.train_root, num_frames=num_frames_per_batch),
             steps_per_epoch=steps_per_epoch,
-            validation_data=generator(self.f_test, num_frames=num_frames_per_batch),
+            validation_data=generator(self.test_root, num_frames=num_frames_per_batch),
             validation_steps=steps_per_epoch_val,
             epochs=nb_epoch,
             callbacks=callbacks,
@@ -204,9 +242,10 @@ class CNNFBF(object):
         # Get and train the mid layers.
         model = self.get_mid_layer_model(model)
         model = self.fit(model, 1000, self.batch_generator,
-                         [self.checkpointer, self.early_stopper, self.tensorboard], num_frames_per_batch=num_frames_per_batch)
+                         [self.checkpointer, self.tensorboard], num_frames_per_batch=num_frames_per_batch)
         return model
 
+
 if __name__ == '__main__':
-    cnnfbf = CNNFBF(train_file='data/multimodal_full_train.hdf5', test_file='data/multimodal_full_test.hdf5')
-    cnnfbf.train_model(num_frames_per_batch=90)
+    cnnfbf = CNNFBF(chunk_size=450)
+    cnnfbf.train_model(num_frames_per_batch=225)

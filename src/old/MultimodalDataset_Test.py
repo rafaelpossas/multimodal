@@ -83,15 +83,21 @@ def train_model():
 
 def create_dataset(sensors):
     dataset = MultimodalDataset()
-    dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/train',
-                                    sensor_root='../multimodal_dataset/sensor/',
-                                    sensors=sensors,
-                                     output_file='multimodal_full_train.hdf5')
-
-    dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/test',
-                                    sensor_root='../multimodal_dataset/sensor/',
-                                    sensors=sensors,
-                                     output_file='multimodal_full_test.hdf5')
+    # dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/train',
+    #                                 sensor_root='../multimodal_dataset/sensor/',
+    #                                 sensors=sensors,
+    #                                  output_file='multimodal_full_train.hdf5')
+    #
+    # dataset.load_multimodal_dataset(450, 450, '../multimodal_dataset/video/images/test',
+    #                                 sensor_root='../multimodal_dataset/sensor/',
+    #                                 sensors=sensors,
+    #                                  output_file='multimodal_full_test.hdf5')
+    # x, y = dataset.load_or_convert_images(image_root='../multimodal_dataset/video/images/test',
+    #                                           act_indexes=range(1, 20),
+    #                                           convert=True,
+    #                                           chunk_size=450)
+    # print(dataset.get_total_size(image_root='../multimodal_dataset/video/images/train'))
+    # print("{} {}".format(x.shape, y.shape))
 if __name__=='__main__':
     create_dataset(['accx','accy','accz','gyrx','gyry','gyrz'])
     #train_model()
