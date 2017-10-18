@@ -94,7 +94,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
-src
 multimodal_dataset/
 src/data/
 uci_cleaned/

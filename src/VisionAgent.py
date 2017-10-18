@@ -244,7 +244,7 @@ if __name__=="__main__":
     a.add_argument('--fine_tune_lr', default=0.0001)
     a.add_argument("--load_fine_tuned_model", default=False)
     a.add_argument("--pre_trained_model", default=None)
-    a.add_argument("--batch_size", default=200)
+    a.add_argument("--batch_size", default=150)
     a.add_argument("--plot", action="store_true")
     a.add_argument("--dropout", default=0.3)
     a.add_argument("--fc_size", default=16)
