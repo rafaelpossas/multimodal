@@ -128,7 +128,7 @@ def greedy_split(arr, chunk_size, step_size, axis=0):
 #         # y = []
 
 
-def extract_files(test_seqs=['seq05']):
+def extract_files():
     """After we have all of our videos split between train and test, and
     all nested within folders representing their classes, we need to
     make a data file that we can reference when training our RNN(s).
@@ -147,7 +147,7 @@ def extract_files(test_seqs=['seq05']):
 
         for vid_class in class_folders:
             class_files = glob.glob(vid_class + '/*.mp4')
-
+            np.random.shuffle(class_files)
             for video_path in class_files:
                 # Get the parts of the file.
                 video_parts = get_video_parts(video_path)
@@ -156,7 +156,8 @@ def extract_files(test_seqs=['seq05']):
 
                 # Only extract if we haven't done it yet. Otherwise, just get
                 # the info.
-                if seq in test_seqs:
+                dataset = np.random.choice(['train', 'test'], p=[0.8, 0.2])
+                if dataset == "test":
                     prefix = "test/"
                 else:
                     prefix = "train/"

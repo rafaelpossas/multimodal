@@ -1,30 +1,41 @@
 
 from scipy.stats import mode
-
-from keras.applications.inception_v3 import InceptionV3
 from keras.layers import Dense, GlobalAveragePooling2D,Dropout
 from keras.models import Model
 from MultimodalDataset import MultimodalDataset
-import matplotlib.pyplot as plt
-import numpy as np
-import h5py
 from keras.optimizers import SGD
-from keras.applications.inception_v3 import InceptionV3, preprocess_input
+from keras.applications.inception_v3 import InceptionV3,preprocess_input
+from keras.applications.mobilenet import MobileNet
 from keras.preprocessing.image import ImageDataGenerator
+from keras.callbacks import ModelCheckpoint
 import argparse
 import sys
 import os
 import math
 import glob
 import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+
 
 class VisionAgent(object):
 
     model = None
-    FC_SIZE = 32
-    NB_IV3_LAYERS_TO_FREEZE = 172
+    NB_IV3_LAYERS_TO_FREEZE = 54
     IM_WIDTH = 224
     IM_HEIGHT = 224
+    activity_dict = {
+        'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
+        'act04': (3, 'riding elevator up'), 'act05': (4, 'riding elevator down'), 'act06': (5, 'riding escalator up'),
+        'act07': (6, 'riding escalator down'), 'act08': (7, 'sitting'), 'act09': (8, 'eating'),
+        'act10': (9, 'drinking'),
+        'act11': (10, 'texting'), 'act12': (11, 'phone calls'), 'act13': (12, 'working on pc'),
+        'act14': (13, 'reading'),
+        'act15': (14, 'writing sentences'), 'act16': (15, 'organizing files'), 'act17': (16, 'running'),
+        'act18': (17, 'push-ups'),
+        'act19': (18, 'sit-ups'), 'act20': (19, 'cycling')
+    }
 
     def __init__(self, model_weights=None, num_classes=20, train_root='multimodal_dataset/video/images/train',
                  test_root='multimodal_dataset/video/images/test'):
@@ -41,7 +52,7 @@ class VisionAgent(object):
             layer.trainable = False
         model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
-    def add_new_last_layer(self,base_model, nb_classes):
+    def add_new_last_layer(self,base_model, nb_classes, fc_size=64, dropout=0.2):
         """Add last layer to the convnet
         Args:
           base_model: keras model excluding top
@@ -51,9 +62,10 @@ class VisionAgent(object):
         """
         x = base_model.output
         x = GlobalAveragePooling2D()(x)
-        x = Dropout(0.5)(x)
-        x = Dense(self.FC_SIZE, activation='relu')(x)  # new FC layer, random init
-        x = Dropout(0.5)(x)
+        x = Dense(fc_size, activation='relu')(x)  # new FC layer, random init
+        x = Dropout(dropout)(x)
+        x = Dense(fc_size, activation='relu')(x)  # new FC layer, random init
+        x = Dropout(dropout)(x)
         predictions = Dense(nb_classes, activation='softmax')(x)  # new softmax layer
         model = Model(inputs=base_model.input, outputs=predictions)
         return model
@@ -80,36 +92,45 @@ class VisionAgent(object):
             raise Exception("The CNN model needs to be provided")
 
     def flow_from_dir(self, root, num_frames=10, max_frames_per_seq=450):
-        act_str_arr = MultimodalDataset.dataset.get_activities_by_index(range(1, 21))
+        all_directories = glob.glob(os.path.join(root, '*', '*'))
+        np.random.shuffle(all_directories)
         x = []
         y = []
         while True:
-            for act_str in act_str_arr:
-                path = os.path.join(root, act_str)
-                all_seq = glob.glob(os.path.join(path, '*'))
-                for seq_ix, seq in enumerate(sorted(all_seq)):
-                    files = glob.glob(os.path.join(seq, '*.jpg'))
-                    for img_ix, img in enumerate(sorted(files)):
-                        if img_ix < max_frames_per_seq:
-                            file_name = img.split(os.path.sep)[-1]
-                            dir_downsampled = os.path.join(seq, 'downsampled')
-                            full_path_downsampled = os.path.join(dir_downsampled, file_name)
+            for dir in all_directories:
+                activity = dir.split(os.path.sep)[-2]
+                files = glob.glob(os.path.join(dir, '*.jpg'))
+                for img_ix, img in enumerate(sorted(files)):
+                    if img_ix < max_frames_per_seq:
 
-                            cur_img = cv2.imread(full_path_downsampled)
+                        cur_img = cv2.resize(cv2.imread(img), (224, 224)).astype('float')
 
-                            cur_img = cur_img / 255.0
+                        cur_img /= 255.
+                        cur_img -= 0.5
+                        cur_img *= 2.
 
-                            x.append(cur_img)
+                        x.append(cur_img)
 
-                            y.append(self.dataset.activity_dict[act_str][0])
+                        y.append(self.activity_dict[activity][0])
 
-                            if len(x) == num_frames:
-                                yield np.array(x), np.eye(20)[np.array(y).astype(int)]
-                                x, y = ([], [])
+                        if len(x) == num_frames:
+                            #print(img)
+                            yield np.array(x), np.eye(20)[np.array(y).astype(int)]
+                            x, y = ([], [])
 
-    def get_model(self):
-        base_model = InceptionV3(weights='imagenet', include_top=False)  # include_top=False excludes final FC layer
-        model = self.add_new_last_layer(base_model, self.num_classes)
+    def get_trainable_layers(self, model):
+        count = 0
+        for layer in model.layers:
+            weights = layer.weights
+            if weights:
+                count+=1
+        return count
+
+    def get_model(self, fc_size=64, dropout=0.5):
+        #base_model = InceptionV3(weights='imagenet', include_top=False)  # include_top=False excludes final FC layer
+        base_model = MobileNet(input_shape=(224,224,3), weights='imagenet', include_top=False)
+
+        model = self.add_new_last_layer(base_model, self.num_classes, fc_size, dropout)
         return base_model, model
 
     def train(self,args):
@@ -155,21 +176,34 @@ class VisionAgent(object):
         )
 
         # setup model
-        base_model, model = self.get_model()
-
+        base_model, model = self.get_model(fc_size=args.fc_size, dropout=args.dropout)
         # fine-tuning
-        self.setup_to_finetune(model,args.fine_tune_lr)
+        self.setup_to_finetune(model, args.fine_tune_lr)
+        if not args.load_fine_tuned_model and args.pre_trained_model is None:
 
-        history_ft = model.fit_generator(
-            train_generator,
-            steps_per_epoch=math.ceil(nb_train_samples/batch_size),
-            epochs=nb_epoch_fine_tune,
-            validation_data=validation_generator,
-            validation_steps=math.ceil(nb_val_samples/batch_size),
-            class_weight='auto')
+            history_ft = model.fit_generator(
+                self.flow_from_dir(args.train_dir,args.batch_size),
+                steps_per_epoch=math.ceil(nb_train_samples/batch_size),
+                epochs=nb_epoch_fine_tune,
+                validation_data=self.flow_from_dir(args.val_dir, args.batch_size),
+                validation_steps=math.ceil(nb_val_samples/batch_size),
+                class_weight='auto')
 
-        # transfer learning
-        self.setup_to_transfer_learn(model, base_model)
+            model.save_weights('models/vision/cnn_finetune.hdf5')
+            # transfer learning
+            self.setup_to_transfer_learn(model, base_model)
+        else:
+            if args.pre_trained_model is None:
+                model.load_weights('models/vision/cnn_finetune.hdf5')
+            else:
+                model.load_weights(args.pre_trained_model)
+
+
+        checkpointer = ModelCheckpoint(
+            filepath='models/vision/inception.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
+            verbose=0,
+            monitor='val_acc',
+            save_best_only=True)
 
         history_tl = model.fit_generator(
             train_generator,
@@ -177,14 +211,11 @@ class VisionAgent(object):
             steps_per_epoch=math.ceil(nb_train_samples/batch_size),
             validation_data=validation_generator,
             validation_steps=math.ceil(nb_val_samples/batch_size),
-            class_weight='auto')
-
-
-
-        model.save(args.output_model_file)
+            class_weight='auto',
+            callbacks=[checkpointer])
 
         if args.plot:
-            self.plot_training(history_ft)
+            self.plot_training(history_tl)
 
     def plot_training(self, history):
         acc = history.history['acc']
@@ -211,10 +242,12 @@ if __name__=="__main__":
     a.add_argument("--nb_epoch_fine_tune", default=3)
     a.add_argument("--nb_epoch_train", default=10)
     a.add_argument('--fine_tune_lr', default=0.0001)
-    a.add_argument("--batch_size", default=150)
-    a.add_argument("--output_model_file", default="inceptionv3-ft.model")
+    a.add_argument("--load_fine_tuned_model", default=False)
+    a.add_argument("--pre_trained_model", default=None)
+    a.add_argument("--batch_size", default=200)
     a.add_argument("--plot", action="store_true")
-
+    a.add_argument("--dropout", default=0.3)
+    a.add_argument("--fc_size", default=16)
     vision_agent = VisionAgent()
     args = a.parse_args()
     if args.train_dir is None or args.val_dir is None:
@@ -226,76 +259,3 @@ if __name__=="__main__":
         sys.exit(1)
 
     vision_agent.train(args)
-#
-# if __name__ == '__main__':
-#     vision_agent = VisionAgent()
-#     vs_model = vision_agent._get_model()
-#     train_file = h5py.File('data/multimodal_full_train.hdf5')
-#     test_file = h5py.File("data/multimodal_full_test.hdf5")
-#     vs_model.fit_generator(
-#         vision_agent.image_generator(train_file, batch_size=1, num_frames=25),
-#         steps_per_epoch=1,
-#         max_queue_size=1,
-#         epochs=100)
-
-#
-# def get_image_prediction(x, cnn_model=None, num_samples=15):
-#     if cnn_model is not None:
-#         pred = cnn_model.predict(x)
-#         pred = np.argmax(pred, axis=1)
-#         pred = pred.reshape((int(pred.shape[0]/num_samples), num_samples, 1))
-#         return np.asarray([mode(arr.flatten())[0][0] for arr in pred])
-#     else:
-#         raise Exception("The CNN model needs to be provided")
-#
-#
-# def get_sensor_prediction(x, lstm_model=None, num_samples=5):
-#     if lstm_model is not None:
-#         pred = lstm_model.predict(x)
-#         pred = np.argmax(pred, axis=1)
-#         return pred
-#     else:
-#         raise Exception("The CNN model needs to be provided")
-#
-# if __name__ == '__main__':
-#     vision = VisionAgent()
-#     lstm = SensorLSTM()
-#     num_classes = 20
-#     weights_file = None
-#     f_test = h5py.File('multimodal_test.hdf5')
-#
-#     x_img = f_test['x_img']
-#     y_img = f_test['y_img']
-#
-#     x_sns = f_test['x_sns']
-#     y_sns = f_test['y_sns']
-#
-#     print(x_img.shape)
-#     print(y_img.shape)
-#
-#     print(x_sns.shape)
-#     print(y_sns.shape)
-#
-#     model_cnn = vision._get_model(num_classes=20, weights='checkpoints/inception.029-1.08.hdf5')
-#     #x, y = next(cnn.image_generator(f_test, batch_size=2))
-#     #print(model_cnn.evaluate(x, y))
-#
-#     #pred_cnn = get_image_prediction(x, model_cnn)
-#     pred_cnn = model_cnn.predict_generator(generator=vision.image_generator(f_test, 24), steps=50,verbose=1)
-#     print(pred_cnn)
-#
-#     model_lstm = lstm.get_model(input_shape=(x_sns.shape[1], x_sns.shape[2]),
-#                                 output_shape=num_classes, dropout=0.4, layer_size=128,
-#                                 optimizer='rmsprop')
-#
-#     model_lstm.load_weights('sensor_model.hdf5')
-#     x = x_sns[:]
-#     pred_lstm = get_sensor_prediction(x, lstm_model=model_lstm)
-#     print(pred_lstm)
-#
-#     #print(y_img[:10])
-#     #print(y_sns[:10])
-#
-#     with h5py.File('predictions.hdf5', "w") as hf:
-#         hf.create_dataset("pred_img", data=pred_cnn)
-#         hf.create_dataset("pred_sns", data=pred_lstm)

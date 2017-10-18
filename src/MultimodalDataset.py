@@ -2,7 +2,7 @@ from builtins import Exception
 
 import numpy as np
 import pandas as pd
-import os
+import os, shutil
 import h5py
 import glob
 import cv2
@@ -95,18 +95,36 @@ class MultimodalDataset(object):
 
         return np.array(list_x), self.one_hot(np.array(list_y))
 
-    def _load_all_sensor_files(self, activities_files, selected_sensors, root_dir):
+    def split_train_test_sns(self, sensor_root, test_seq=['seq05', 'seq10']):
+        train_path = os.path.join(sensor_root, 'train')
+        test_path = os.path.join(sensor_root, 'test')
+
+        if not os.path.exists(train_path):
+            os.mkdir(train_path)
+        if not os.path.exists(test_path):
+            os.mkdir(test_path)
+
+        activity_files = glob.glob(os.path.join(sensor_root, '*.csv'))
+
+        for file in activity_files:
+            seq = file.split(os.path.sep)[-1][5:10]
+            if seq not in test_seq:
+                shutil.move(file, train_path)
+            else:
+                shutil.move(file, test_path)
+
+    def load_all_sensor_files(self,selected_sensors, sensor_root):
         list_x = []
         list_y = []
-
-        for actvity in activities_files:
-            for file in activities_files[actvity]:
-                df = pd.read_csv(root_dir+"/"+file, index_col=None, header=None)
-                df.columns = self.sensor_columns
-                df = df[selected_sensors] if len(selected_sensors) > 0 else df
-                sensor = sequence.pad_sequences(df.values.T, maxlen=150, dtype='float32')
-                list_x.append(sensor.T)
-                list_y.append([self.activity_dict[actvity][0]])
+        activities_files = glob.glob(os.path.join(sensor_root, '*.csv'))
+        for file in activities_files:
+            activity = file.split(os.path.sep)[-1][0:5]
+            df = pd.read_csv(file, index_col=None, header=None)
+            df.columns = self.sensor_columns
+            df = df[selected_sensors] if len(selected_sensors) > 0 else df
+            sensor = sequence.pad_sequences(df.values.T, maxlen=150, dtype='float32')
+            list_x.append(sensor.T)
+            list_y.append([self.activity_dict[activity][0]])
 
         return np.array(list_x), np.array(list_y)
 
