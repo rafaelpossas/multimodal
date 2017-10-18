@@ -6,6 +6,9 @@ from MultimodalDataset import MultimodalDataset
 from keras.optimizers import SGD
 from keras.applications.inception_v3 import InceptionV3,preprocess_input
 from keras.applications.mobilenet import MobileNet
+from keras.applications.resnet50 import ResNet50
+from keras.applications.vgg16 import VGG16
+from keras.applications.inception_v3 import InceptionV3
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint
 import argparse
@@ -22,6 +25,7 @@ import random
 class VisionAgent(object):
 
     model = None
+    NB_LAYERS_TO_FREEZE = None
     NB_IV3_LAYERS_TO_FREEZE = 54
     IM_WIDTH = 224
     IM_HEIGHT = 224
@@ -64,8 +68,6 @@ class VisionAgent(object):
         x = GlobalAveragePooling2D()(x)
         x = Dense(fc_size, activation='relu')(x)  # new FC layer, random init
         x = Dropout(dropout)(x)
-        x = Dense(fc_size, activation='relu')(x)  # new FC layer, random init
-        x = Dropout(dropout)(x)
         predictions = Dense(nb_classes, activation='softmax')(x)  # new softmax layer
         model = Model(inputs=base_model.input, outputs=predictions)
         return model
@@ -76,9 +78,9 @@ class VisionAgent(object):
         Args:
           model: keras model
         """
-        for layer in model.layers[:self.NB_IV3_LAYERS_TO_FREEZE]:
+        for layer in model.layers[:self.NB_LAYERS_TO_FREEZE]:
             layer.trainable = False
-        for layer in model.layers[self.NB_IV3_LAYERS_TO_FREEZE:]:
+        for layer in model.layers[self.NB_LAYERS_TO_FREEZE:]:
             layer.trainable = True
         model.compile(optimizer=SGD(lr=fine_tune_lr, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
 
@@ -126,9 +128,17 @@ class VisionAgent(object):
                 count+=1
         return count
 
-    def get_model(self, fc_size=64, dropout=0.5):
+    def get_model(self, fc_size=64, dropout=0.5, architecture="mobilenet"):
         #base_model = InceptionV3(weights='imagenet', include_top=False)  # include_top=False excludes final FC layer
-        base_model = MobileNet(input_shape=(224,224,3), weights='imagenet', include_top=False)
+        if architecture == "mobilenet":
+            base_model = MobileNet(input_shape=(224,224,3), weights='imagenet', include_top=False)
+            self.NB_LAYERS_TO_FREEZE = 54
+        if architecture == "resnet":
+            base_model = ResNet50(input_shape=(224, 224, 3), weights='imagenet', include_top=False)
+            self.NB_LAYERS_TO_FREEZE = 163
+        if architecture == "inception":
+            base_model = InceptionV3(input_shape=(224, 224, 3), weights='imagenet', include_top=False)
+            self.NB_LAYERS_TO_FREEZE = 249
 
         model = self.add_new_last_layer(base_model, self.num_classes, fc_size, dropout)
         return base_model, model
@@ -138,7 +148,7 @@ class VisionAgent(object):
         nb_train_samples = MultimodalDataset.get_total_size(self.train_root)
         nb_val_samples = MultimodalDataset.get_total_size(self.test_root)
         nb_epoch_fine_tune = int(args.nb_epoch_fine_tune)
-        nb_epoch_train = int(args.nb_epoch_train)
+        nb_epoch_transferlearn = int(args.nb_epoch_transferlearn)
         batch_size = int(args.batch_size)
 
         # data prep
@@ -176,38 +186,40 @@ class VisionAgent(object):
         )
 
         # setup model
-        base_model, model = self.get_model(fc_size=args.fc_size, dropout=args.dropout)
+        base_model, model = self.get_model(fc_size=args.fc_size, dropout=args.dropout, architecture=args.architecture)
         # fine-tuning
-        self.setup_to_finetune(model, args.fine_tune_lr)
+
+        self.setup_to_transfer_learn(model, base_model)
         if not args.load_fine_tuned_model and args.pre_trained_model is None:
 
             history_ft = model.fit_generator(
                 self.flow_from_dir(args.train_dir,args.batch_size),
                 steps_per_epoch=math.ceil(nb_train_samples/batch_size),
-                epochs=nb_epoch_fine_tune,
+                epochs=nb_epoch_transferlearn,
                 validation_data=self.flow_from_dir(args.val_dir, args.batch_size),
                 validation_steps=math.ceil(nb_val_samples/batch_size),
                 class_weight='auto')
 
-            model.save_weights('models/vision/cnn_finetune.hdf5')
+            model.save_weights('models/vision/'+args.architecture+'_finetune.hdf5')
             # transfer learning
-            self.setup_to_transfer_learn(model, base_model)
+
         else:
             if args.pre_trained_model is None:
-                model.load_weights('models/vision/cnn_finetune.hdf5')
+                model.load_weights('models/vision/'+args.architecture+'_finetune.hdf5')
             else:
                 model.load_weights(args.pre_trained_model)
 
+        self.setup_to_finetune(model, args.fine_tune_lr)
 
         checkpointer = ModelCheckpoint(
-            filepath='models/vision/inception.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
+            filepath='models/vision/'+args.architecture+'.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
             verbose=0,
             monitor='val_acc',
             save_best_only=True)
 
         history_tl = model.fit_generator(
             train_generator,
-            epochs=nb_epoch_train,
+            epochs=nb_epoch_fine_tune,
             steps_per_epoch=math.ceil(nb_train_samples/batch_size),
             validation_data=validation_generator,
             validation_steps=math.ceil(nb_val_samples/batch_size),
@@ -239,15 +251,16 @@ if __name__=="__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--train_dir", default='multimodal_dataset/video/images/train')
     a.add_argument("--val_dir", default='multimodal_dataset/video/images/test')
-    a.add_argument("--nb_epoch_fine_tune", default=3)
-    a.add_argument("--nb_epoch_train", default=10)
+    a.add_argument("--nb_epoch_fine_tune", default=20)
+    a.add_argument("--nb_epoch_transferlearn", default=10)
     a.add_argument('--fine_tune_lr', default=0.0001)
-    a.add_argument("--load_fine_tuned_model", default=False)
+    a.add_argument("--load_fine_tuned_model", default=None)
     a.add_argument("--pre_trained_model", default=None)
     a.add_argument("--batch_size", default=150)
     a.add_argument("--plot", action="store_true")
     a.add_argument("--dropout", default=0.3)
-    a.add_argument("--fc_size", default=16)
+    a.add_argument("--fc_size", default=1024)
+    a.add_argument("--architecture", default="resnet")
     vision_agent = VisionAgent()
     args = a.parse_args()
     if args.train_dir is None or args.val_dir is None:

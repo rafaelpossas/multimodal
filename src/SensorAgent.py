@@ -1,4 +1,3 @@
-from src.MultimodalDataset import MultimodalDataset
 import h5py
 import numpy as np
 import tensorflow as tf

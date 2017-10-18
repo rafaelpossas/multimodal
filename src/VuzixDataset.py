@@ -6,6 +6,13 @@ import pandas as pd
 import cv2
 import h5py
 import shutil
+
+activity_dict = ['walking', 'walking down/upstairs', 'riding elevator', 'riding escalator', 'working on pc', 'reading',
+                 'writing', 'eating and drinking', 'browsing mobile phone', 'running', 'doing push ups', 'doing sit ups',
+                 'cycling', 'washing dishes', 'watching tv', 'chopping food', 'cooking on stove', 'brushing teeth', 'lying down',
+                 'talking with people']
+
+
 def get_video_parts(video_path):
     """Given a full path to a video, return its parts."""
     parts = video_path.split('/')
@@ -13,12 +20,6 @@ def get_video_parts(video_path):
     dir = '/'.join(parts[0:-1]) + '/'
     return filename, dir
 
-def generate_hdf5(img_labels_array):
-    with h5py.File(output_file, "w") as hf:
-        hf.create_dataset("x_img", data=x_img)
-        hf.create_dataset("y_img", data=y_img)
-        hf.create_dataset("x_sns", data=x_sensor)
-        hf.create_dataset("y_sns", data=y_sensor)
 
 
 def assign_labels(folders=['vuzix/'], sensor_file_prefix='ACC_REC', labels_file_name='labels'):
@@ -73,7 +74,7 @@ def assign_labels(folders=['vuzix/'], sensor_file_prefix='ACC_REC', labels_file_
                     pass
     return img_array, label_array
 
-def extract_files(test_seqs=['seq09', 'seq10'], folders=['vuzix/']):
+def extract_files(folders=['vuzix/']):
     """After we have all of our videos split between train and test, and
     all nested within folders representing their classes, we need to
     make a data file that we can reference when training our RNN(s).
@@ -111,7 +112,7 @@ def extract_files(test_seqs=['seq09', 'seq10'], folders=['vuzix/']):
                     os.makedirs(cur_class_dir)
 
                 src = video_dir + '/' + filename
-                dest = cur_class_dir + filename + '_%04d.jpg'
+                dest = cur_class_dir + filename.split['.'][0] + '_%04d.jpg'
                 call(["ffmpeg", "-i", src, dest])
 
                 # Now get how many frames it is.
