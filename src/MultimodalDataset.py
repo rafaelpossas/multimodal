@@ -59,9 +59,10 @@ class MultimodalDataset(object):
         return activities_files  # Self-explanatory.
 
     @staticmethod
-    def flow_image_from_dir(root, max_frames_per_video=450, batch_size=10):
+    def flow_image_from_dir(root, max_frames_per_video=450, batch_size=10, group_size=1):
         x = []
         y = []
+
         activity_dict = {
             'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
             'act04': (3, 'riding elevator up'), 'act05': (4, 'riding elevator down'),
@@ -77,17 +78,46 @@ class MultimodalDataset(object):
         }
         while True:
             files = glob.glob(os.path.join(root, '*', '*', '*.jpg'))
+            all_grouped_files = list()
+            if group_size > 1:
+                grouped_files = list()
+                cur_activity = ""
+                for img_file in sorted(files):
+
+                    if len(grouped_files) == 0:
+                        cur_activity = img_file.split(os.path.sep)[-3]
+
+                    if len(grouped_files) < group_size:
+                        if cur_activity != img_file.split(os.path.sep)[-3]:
+                            grouped_files = list()
+                        grouped_files.append(img_file)
+
+                    if len(grouped_files) == group_size:
+                        all_grouped_files.append(grouped_files)
+                        grouped_files = []
+
+            files = all_grouped_files if len(all_grouped_files) > 0 else files
             np.random.shuffle(files)
+
             for img_ix, img in enumerate(files):
+                cur_img_batch = []
                 if img_ix < max_frames_per_video:
-                    activity = img.split(os.path.sep)[-3]
-                    cur_img = cv2.resize(cv2.imread(img), (224, 224)).astype('float')
+                    if type(img) is not list:
+                        img = [img]
 
-                    cur_img /= 255.
-                    cur_img -= 0.5
-                    cur_img *= 2.
+                    activity = img[0].split(os.path.sep)[-3]
 
-                    x.append(cur_img)
+                    for img_file in img:
+
+                        cur_img = cv2.resize(cv2.imread(img_file), (224, 224)).astype('float')
+
+                        cur_img /= 255.
+                        cur_img -= 0.5
+                        cur_img *= 2.
+
+                        cur_img_batch.append(cur_img)
+
+                    x.append(np.squeeze(cur_img_batch))
 
                     y.append(activity_dict[activity][0])
 

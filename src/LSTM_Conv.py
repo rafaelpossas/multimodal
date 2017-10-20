@@ -14,6 +14,7 @@ import cv2
 import glob
 import math
 from scipy.stats import mode
+import argparse
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import SGD
 
@@ -694,51 +695,20 @@ def intermediate_model(weights = "models/vision/inception.009-0.567755-0.53.hdf5
     return get_3rd_layer_output
 
 
-def flow_from_dir(root, num_frames=10, max_frames_per_seq=450, im_output=None):
-    all_directories = glob.glob(os.path.join(root, '*', '*'))
-    np.random.shuffle(all_directories)
-    x = []
-    y = []
-    while True:
-        for dir in all_directories:
-            activity = dir.split(os.path.sep)[-2]
-            files = glob.glob(os.path.join(dir, '*.jpg'))
-            for img_ix, img in enumerate(sorted(files)):
-                if img_ix < max_frames_per_seq:
 
-                    cur_img = cv2.resize(cv2.imread(img), (224, 224)).astype('float')
-
-                    cur_img /= 255.
-                    cur_img -= 0.5
-                    cur_img *= 2.
-
-                    #layer_output = im_output([cur_img[np.newaxis], 1])[0]
-
-                    x.append(np.squeeze(cur_img))
-
-                    y.append(activity_dict[activity][0])
-
-                    if len(x) == num_frames:
-                        np_x, np_y = np.array(x), np.eye(20)[np.array(y).astype(int)]
-                        np_x = np_x.reshape((-1, 30, 224,224,3))
-                        np_y = [mode(np_y[i:i + 5])[0][0] for i in range(0, len(np_y), 30) if i % 30 == 0]
-                        yield np_x, np.array(np_y)
-                        x, y = ([], [])
-
-
-NB_IV3_LAYERS_TO_FREEZE = 70
+NB_IV3_LAYERS_TO_FREEZE = 54
 
 def model(base_model) :
 
     base_model.summary()
     x = base_model.output
-    x = LSTM(1024, return_sequences=False, input_shape=(30, 1024), dropout=0.5)(x)
+    x = LSTM(16, return_sequences=False, input_shape=(30, 1024))(x)
     # x = Flatten()(x)
     # x = Dense(1024, activation='relu')(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.6)(x)
     predictions = Dense(20, activation='softmax')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
-    model.compile(optimizer='adam',
+    model.compile(optimizer='rmsprop',
                   loss='categorical_crossentropy', metrics=['accuracy'])
     model.summary()
 
@@ -754,7 +724,9 @@ def setup_to_finetune(model, fine_tune_lr=0.0001):
         layer.trainable = False
     for layer in model.layers[NB_IV3_LAYERS_TO_FREEZE:]:
         layer.trainable = True
-    model.compile(optimizer=SGD(lr=fine_tune_lr, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
+
+    model.compile(optimizer=SGD(lr=fine_tune_lr, momentum=0.9),
+                  loss='categorical_crossentropy', metrics=['accuracy'])
 
 def setup_to_transfer_learn(model, base_model):
     """Freeze all layers and compile the model"""
@@ -763,16 +735,27 @@ def setup_to_transfer_learn(model, base_model):
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
 if __name__ == '__main__':
+    a = argparse.ArgumentParser()
+    a.add_argument("--train_dir", default='multimodal_dataset/video/images/train')
+    a.add_argument("--val_dir", default='multimodal_dataset/video/images/test')
+    a.add_argument("--batch_size", default=1, type=int)
+    a.add_argument("--group_size", default=30, type=int)
+    a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
+    a.add_argument("--nb_epoch_transferlearn", default=1, type=int)
+    args = a.parse_args()
     #im_model = intermediate_model()
-    train_root = "multimodal_dataset/video/images/train"
-    test_root = "multimodal_dataset/video/images/test"
-    num_frames_per_batch = 30
-    frames_per_seq = 5
+
+    train_root = args.train_dir
+    test_root = args.val_dir
+    group_size = args.group_size
+    batch_size = args.batch_size
+
     total_train_size = MultimodalDataset.get_total_size(train_root)
     total_test_size = MultimodalDataset.get_total_size(test_root)
-    steps_per_epoch = math.ceil((total_train_size / num_frames_per_batch))
-    steps_per_epoch_val = math.ceil((total_test_size / num_frames_per_batch))
-    base_model = MobileNet(input_shape=(30, 224, 224, 3), include_top=False, pooling="avg")
+    steps_per_epoch = math.ceil((total_train_size / group_size))
+    steps_per_epoch_val = math.ceil((total_test_size / group_size))
+
+    base_model = MobileNet(input_shape=(group_size, 224, 224, 3), weights=None, include_top=False, pooling="avg")
     model = model(base_model)
 
     checkpointer = ModelCheckpoint(
@@ -780,27 +763,35 @@ if __name__ == '__main__':
         verbose=0,
         monitor='val_acc',
         save_best_only=True)
-    setup_to_finetune(model)
+
+    setup_to_transfer_learn(model, base_model)
 
     model.fit_generator(
-        flow_from_dir(root=train_root, num_frames=num_frames_per_batch),
+        MultimodalDataset.flow_image_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
+                                              group_size=group_size),
         steps_per_epoch=steps_per_epoch,
-        validation_data=flow_from_dir(root=test_root, num_frames=num_frames_per_batch),
+        validation_data= MultimodalDataset.flow_image_from_dir(root=test_root, max_frames_per_video=450, batch_size=batch_size,
+                                                               group_size=group_size),
         validation_steps=steps_per_epoch_val,
-        epochs=5,
+        epochs=args.nb_epoch_transferlearn,
         callbacks=[checkpointer],
         verbose=1)
-    setup_to_transfer_learn(model, base_model)
+
     checkpointer = ModelCheckpoint(
         filepath='models/vision/lstmconv.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
         verbose=0,
         monitor='val_acc',
         save_best_only=True)
+
+    setup_to_finetune(model)
+
     model.fit_generator(
-        flow_from_dir(root=train_root, num_frames=num_frames_per_batch),
+        MultimodalDataset.flow_image_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
+                                              group_size=group_size),
         steps_per_epoch=steps_per_epoch,
-        validation_data=flow_from_dir(root=test_root, num_frames=num_frames_per_batch),
+        validation_data= MultimodalDataset.flow_image_from_dir(root=test_root, max_frames_per_video=450, batch_size=batch_size,
+                                                               group_size=group_size),
         validation_steps=steps_per_epoch_val,
-        epochs=10,
+        epochs=args.nb_epoch_fine_tune,
         callbacks=[checkpointer],
         verbose=1)
