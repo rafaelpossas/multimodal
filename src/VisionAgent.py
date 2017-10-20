@@ -3,11 +3,11 @@ from scipy.stats import mode
 from keras.layers import Dense, GlobalAveragePooling2D,Dropout
 from keras.models import Model
 from MultimodalDataset import MultimodalDataset
+from VuzixDataset import VuzixDataset
 from keras.optimizers import SGD
 from keras.applications.inception_v3 import InceptionV3,preprocess_input
 from keras.applications.mobilenet import MobileNet
 from keras.applications.resnet50 import ResNet50
-from keras.applications.vgg16 import VGG16
 from keras.applications.inception_v3 import InceptionV3
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint
@@ -19,7 +19,8 @@ import glob
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import random
+import tensorflow as tf
+import keras.backend as K
 
 
 class VisionAgent(object):
@@ -52,8 +53,12 @@ class VisionAgent(object):
 
     def setup_to_transfer_learn(self,model, base_model):
         """Freeze all layers and compile the model"""
-        for layer in base_model.layers:
-            layer.trainable = False
+        if base_model is not None:
+            for layer in base_model.layers:
+                layer.trainable = False
+        else:
+            for layer in base_model.layers[:-2]:
+                layer.trainable = False
         model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
     def add_new_last_layer(self,base_model, nb_classes, fc_size=64, dropout=0.2):
@@ -93,32 +98,6 @@ class VisionAgent(object):
         else:
             raise Exception("The CNN model needs to be provided")
 
-    def flow_from_dir(self, root, num_frames=10, max_frames_per_seq=450):
-        all_directories = glob.glob(os.path.join(root, '*', '*'))
-        np.random.shuffle(all_directories)
-        x = []
-        y = []
-        while True:
-            for dir in all_directories:
-                activity = dir.split(os.path.sep)[-2]
-                files = glob.glob(os.path.join(dir, '*.jpg'))
-                for img_ix, img in enumerate(sorted(files)):
-                    if img_ix < max_frames_per_seq:
-
-                        cur_img = cv2.resize(cv2.imread(img), (224, 224)).astype('float')
-
-                        cur_img /= 255.
-                        cur_img -= 0.5
-                        cur_img *= 2.
-
-                        x.append(cur_img)
-
-                        y.append(self.activity_dict[activity][0])
-
-                        if len(x) == num_frames:
-                            #print(img)
-                            yield np.array(x), np.eye(20)[np.array(y).astype(int)]
-                            x, y = ([], [])
 
     def get_trainable_layers(self, model):
         count = 0
@@ -128,8 +107,9 @@ class VisionAgent(object):
                 count+=1
         return count
 
-    def get_model(self, fc_size=64, dropout=0.5, architecture="mobilenet"):
+    def get_model(self, fc_size=64, dropout=0.5, architecture="mobilenet", weights=None):
         #base_model = InceptionV3(weights='imagenet', include_top=False)  # include_top=False excludes final FC layer
+        base_model = None
         if architecture == "mobilenet":
             base_model = MobileNet(input_shape=(224,224,3), weights='imagenet', include_top=False)
             self.NB_LAYERS_TO_FREEZE = 54
@@ -138,9 +118,14 @@ class VisionAgent(object):
             self.NB_LAYERS_TO_FREEZE = 163
         if architecture == "inception":
             base_model = InceptionV3(input_shape=(224, 224, 3), weights='imagenet', include_top=False)
-            self.NB_LAYERS_TO_FREEZE = 249
+            self.NB_LAYERS_TO_FREEZE = 172
 
-        model = self.add_new_last_layer(base_model, self.num_classes, fc_size, dropout)
+        if weights is None:
+            model = self.add_new_last_layer(base_model, self.num_classes, fc_size, dropout)
+        else:
+            base_model.load_weights(weights)
+            model = base_model
+            base_model = None
         return base_model, model
 
     def train(self,args):
@@ -150,7 +135,10 @@ class VisionAgent(object):
         nb_epoch_fine_tune = int(args.nb_epoch_fine_tune)
         nb_epoch_transferlearn = int(args.nb_epoch_transferlearn)
         batch_size = int(args.batch_size)
-
+        if args.dataset == 'vuzix':
+            flow_from_dir = VuzixDataset.flow_images_from_dir
+        else:
+            flow_from_dir = MultimodalDataset.flow_image_from_dir
         # data prep
         train_datagen = ImageDataGenerator(
             preprocessing_function=preprocess_input,
@@ -193,10 +181,10 @@ class VisionAgent(object):
         if not args.load_fine_tuned_model and args.pre_trained_model is None:
 
             history_ft = model.fit_generator(
-                self.flow_from_dir(args.train_dir,args.batch_size),
+                flow_from_dir(root=args.train_dir, batch_size=args.batch_size),
                 steps_per_epoch=math.ceil(nb_train_samples/batch_size),
                 epochs=nb_epoch_transferlearn,
-                validation_data=self.flow_from_dir(args.val_dir, args.batch_size),
+                validation_data=flow_from_dir(root=args.val_dir, batch_size=args.batch_size),
                 validation_steps=math.ceil(nb_val_samples/batch_size),
                 class_weight='auto')
 
@@ -218,10 +206,10 @@ class VisionAgent(object):
             save_best_only=True)
 
         history_tl = model.fit_generator(
-            train_generator,
+            MultimodalDataset.flow_image_from_dir(args.train_dir, batch_size=batch_size),
             epochs=nb_epoch_fine_tune,
             steps_per_epoch=math.ceil(nb_train_samples/batch_size),
-            validation_data=validation_generator,
+            validation_data=MultimodalDataset.flow_image_from_dir(args.val_dir, batch_size=batch_size),
             validation_steps=math.ceil(nb_val_samples/batch_size),
             class_weight='auto',
             callbacks=[checkpointer])
@@ -251,18 +239,28 @@ if __name__=="__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--train_dir", default='multimodal_dataset/video/images/train')
     a.add_argument("--val_dir", default='multimodal_dataset/video/images/test')
-    a.add_argument("--nb_epoch_fine_tune", default=20)
-    a.add_argument("--nb_epoch_transferlearn", default=10)
-    a.add_argument('--fine_tune_lr', default=0.0001)
-    a.add_argument("--load_fine_tuned_model", default=None)
+    a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
+    a.add_argument("--nb_epoch_transferlearn", default=10, type=int)
+    a.add_argument('--fine_tune_lr', default=0.0001, type=float)
+    a.add_argument("--load_fine_tuned_model", default=True)
     a.add_argument("--pre_trained_model", default=None)
-    a.add_argument("--batch_size", default=150)
+    a.add_argument("--batch_size", default=150, type=int)
     a.add_argument("--plot", action="store_true")
-    a.add_argument("--dropout", default=0.3)
-    a.add_argument("--fc_size", default=1024)
-    a.add_argument("--architecture", default="resnet")
+    a.add_argument("--dropout", default=0.3, type=float)
+    a.add_argument("--fc_size", default=1024, type=int)
+    a.add_argument("--architecture", default="inception")
+    a.add_argument("--dataset", default="multimodal", type=str)
+    a.add_argument("--limit_resources", default=False)
+
     vision_agent = VisionAgent()
     args = a.parse_args()
+
+    if args.limit_resources:
+        config = tf.ConfigProto(intra_op_parallelism_threads=4, inter_op_parallelism_threads=4,
+                                allow_soft_placement=True, device_count={'CPU': 1}, allow_grouth=True)
+        session = tf.Session(config=config)
+        K.set_session(session)
+
     if args.train_dir is None or args.val_dir is None:
         a.print_help()
         sys.exit(1)

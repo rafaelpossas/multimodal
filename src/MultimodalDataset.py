@@ -58,6 +58,44 @@ class MultimodalDataset(object):
 
         return activities_files  # Self-explanatory.
 
+    @staticmethod
+    def flow_image_from_dir(root, max_frames_per_video=450, batch_size=10):
+        x = []
+        y = []
+        activity_dict = {
+            'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
+            'act04': (3, 'riding elevator up'), 'act05': (4, 'riding elevator down'),
+            'act06': (5, 'riding escalator up'),
+            'act07': (6, 'riding escalator down'), 'act08': (7, 'sitting'), 'act09': (8, 'eating'),
+            'act10': (9, 'drinking'),
+            'act11': (10, 'texting'), 'act12': (11, 'phone calls'), 'act13': (12, 'working on pc'),
+            'act14': (13, 'reading'),
+            'act15': (14, 'writing sentences'), 'act16': (15, 'organizing files'), 'act17': (16, 'running'),
+            'act18': (17, 'push-ups'),
+            'act19': (18, 'sit-ups'), 'act20': (19, 'cycling')
+
+        }
+        while True:
+            files = glob.glob(os.path.join(root, '*', '*', '*.jpg'))
+            np.random.shuffle(files)
+            for img_ix, img in enumerate(files):
+                if img_ix < max_frames_per_video:
+                    activity = img.split(os.path.sep)[-3]
+                    cur_img = cv2.resize(cv2.imread(img), (224, 224)).astype('float')
+
+                    cur_img /= 255.
+                    cur_img -= 0.5
+                    cur_img *= 2.
+
+                    x.append(cur_img)
+
+                    y.append(activity_dict[activity][0])
+
+                    if len(x) == batch_size:
+                        #print(img)
+                        yield np.array(x), np.eye(20)[np.array(y).astype(int)]
+                        x, y = ([], [])
+
     def load_sensor_dataset(self, train_size=0.8, split_train=True,
                   group_size=50, step_size=0, selected_sensors=[], root_dir=None):
 
@@ -165,49 +203,6 @@ class MultimodalDataset(object):
 
         return [arr[i:i + int(chunk_size), :] for i in ix]
 
-    def load_video_dataset(self, chunk_size, step_size, image_root, output_file, image_total_samples=450):
-
-        x = []
-        y = []
-        for path, subdirs, files in os.walk(image_root):
-            if len(subdirs) > 0:
-                print("Current Path: " + path)
-
-            for seq in subdirs:
-                cur_class = []
-                cur_image = []
-
-                files = glob.glob(path + "/" + seq + '/*.jpg')
-
-                if len(files) > 0:
-                    print("Creating images for: " + seq)
-
-                for ix, name in enumerate(files):
-                    if ix < image_total_samples:
-                        cur_image = cv2.resize(cv2.imread(name), (224, 224))
-                        cur_class.append(cur_image)
-
-                while 0 < len(cur_class) < image_total_samples:
-                    cur_class.append(cur_image)
-
-                cur_class = self.greedy_split(np.array(cur_class), chunk_size=chunk_size, step_size=step_size)
-
-                if len(cur_class) > 0:
-                    for cur_frame in cur_class:
-                        x.append(cur_frame)
-                        y.append(self.activity_dict[path.split('/')[-1]][0])
-
-        # x, y = shuffle(x, y)
-
-        with h5py.File(output_file, "w") as hf:
-            hf.create_dataset("x_img", data=x)
-            hf.create_dataset("y_img", data=y)
-
-            # if len(x) > 0:
-            #     print(min([len(p) for p in x]))
-            # x = []
-            # y = []
-        return x, y
     @staticmethod
     def get_activities_by_index(act_indexes):
         act_str_arr = []
@@ -229,39 +224,6 @@ class MultimodalDataset(object):
             counter += len(seqs)
         return counter
 
-    def load_or_convert_images(self, image_root, act_indexes, chunk_size, convert=False, load_downsampled=True, normalize=True):
-        act_str_arr = MultimodalDataset.get_activities_by_index(act_indexes)
-        x = np.zeros((9, 450, 224, 224, 3))
-        y = []
-        for act_str in act_str_arr:
-            path = os.path.join(image_root, act_str)
-            all_seq = glob.glob(os.path.join(path, '*'))
-            for seq_ix, seq in enumerate(sorted(all_seq)):
-                files = glob.glob(os.path.join(seq, '*.jpg'))
-                for img_ix, img in enumerate(sorted(files)):
-                    if img_ix < chunk_size:
-                        file_name = img.split(os.path.sep)[-1]
-                        dir_downsampled = os.path.join(seq, 'downsampled')
-                        full_path_downsampled = os.path.join(dir_downsampled, file_name)
-                        if convert:
-                            cur_image = cv2.resize(cv2.imread(img), (224, 224))
-                            if not os.path.exists(dir_downsampled):
-                                os.mkdir(dir_downsampled)
-                            cv2.imwrite(full_path_downsampled, cur_image)
-                        else:
-                            if load_downsampled:
-                                cur_img = cv2.imread(full_path_downsampled)
-                            else:
-                                cur_img = cv2.imread(img)
-
-                            if normalize:
-                                cur_img = cur_img / 255.0
-
-                            x[seq_ix][img_ix] = cur_img
-
-                y.append(np.repeat(self.activity_dict[act_str][0], chunk_size))
-
-        return x, np.array(y)
 
     def generate_hdf5(self, chunk_size, step_size, image_root, sensor_root,
                                 sensors=['accx', 'accy', 'accz'], output_file='multimodal.hdf5',

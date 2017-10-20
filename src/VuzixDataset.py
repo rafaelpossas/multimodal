@@ -7,127 +7,170 @@ import cv2
 import h5py
 import shutil
 
-activity_dict = ['walking', 'walking down/upstairs', 'riding elevator', 'riding escalator', 'working on pc', 'reading',
-                 'writing', 'eating and drinking', 'browsing mobile phone', 'running', 'doing push ups', 'doing sit ups',
-                 'cycling', 'washing dishes', 'watching tv', 'chopping food', 'cooking on stove', 'brushing teeth', 'lying down',
-                 'talking with people']
-
-
-def get_video_parts(video_path):
-    """Given a full path to a video, return its parts."""
-    parts = video_path.split('/')
-    filename = parts[-1]
-    dir = '/'.join(parts[0:-1]) + '/'
-    return filename, dir
 
 
 
-def assign_labels(folders=['vuzix/'], sensor_file_prefix='ACC_REC', labels_file_name='labels'):
-    img_array = None
-    label_array = None
+class VuzixDataset:
 
-    for folder in folders:
-        class_folders = glob.glob(folder + '*')
-        for global_ix, vid_class in enumerate(class_folders):
+    activity_dict = ['walking', 'walking down/upstairs', 'chopping food', 'riding elevator', 'brushing teeth',
+                     'riding escalator', 'talking with people', 'watching tv', 'eating', 'cooking on stove',
+                     'browsing mobile phone', 'washing dishes', 'working on pc', 'reading', 'writing',
+                     'lying down', 'running', 'doing push ups', 'doing sit ups', 'cycling']
 
-            all_img_files = glob.glob(vid_class + '/images/*.jpg')
-            grouped_imag_files = glob.glob(vid_class + '/images/*/*.jpg')
+    def get_video_parts(self, video_path):
+        """Given a full path to a video, return its parts."""
+        parts = video_path.split('/')
+        filename = parts[-1]
+        dir = parts[1]
+        return filename, dir
 
-            sensor_file = glob.glob(vid_class + '/'+sensor_file_prefix+'*.txt')
-            labels_file = glob.glob(vid_class + '/'+labels_file_name+'*.txt')
+    @staticmethod
+    def flow_images_from_dir(root="vuzix/test/", max_frames_per_video=4500, batch_size=450):
+        all_directories = glob.glob(os.path.join(root, '*'))
+        np.random.shuffle(all_directories)
+        x = []
+        y = []
+        while True:
+            for dir in all_directories:
+                files = glob.glob(os.path.join(dir, "images", "*", '*.jpg'))
+                labels = np.load(os.path.join(dir, "acc_gyr.npy"))[:, -1]
+                for img_ix, img in enumerate(sorted(files)):
+                    if img_ix < max_frames_per_video:
 
-            cur_labels = pd.read_csv(labels_file[0], delimiter=':', header=None)
-            cur_labels = np.array(cur_labels.iloc[:, 1], dtype=pd.Series)
+                        cur_img = cv2.resize(cv2.imread(img), (224, 224)).astype('float')
 
-            sensors_array = pd.read_csv(sensor_file[0], delimiter='\t', header=None)
-            sensors_array = np.array(sensors_array.iloc[:, 3], dtype=pd.Series)
-            sensors_array = [(value,cur_labels[int(value)]) for value in sensors_array]
+                        cur_img /= 255.
+                        cur_img -= 0.5
+                        cur_img *= 2.
 
-            for file in all_img_files:
-                cur_index = int(int(file.split("_")[-1].split(".")[0]))
-                try:
-                    dest_dir = os.path.join(vid_class, "images", "_".join([str(sensors_array[cur_index][0]),
-                                                                           sensors_array[cur_index][1]]))
-                except IndexError:
-                    os.remove(file)
-                    file = None
+                        x.append(cur_img)
 
-                finally:
+                        y.append(labels[img_ix])
 
-                    if not os.path.exists(dest_dir):
-                        os.mkdir(dest_dir)
+                        if len(x) == batch_size:
+                            # print(img)
+                            yield np.array(x), np.eye(20)[np.array(y).astype(int)]
+                            x, y = ([], [])
 
-                    if file is not None:
-                        shutil.move(file, dest_dir)
+    def assign_labels(self, folders=['vuzix/train/','vuzix/test/'],
+                      sensor_files=['ACC', 'GYR'], labels_file_name='labels'):
 
-            if img_array is None and label_array is None:
-                img_array = np.empty((len(class_folders), len(sensors_array)), dtype=np.ndarray)
-                label_array = np.empty((len(class_folders), len(sensors_array)), dtype=np.ndarray)
+        for folder in sorted(folders):
+            class_folders = glob.glob(folder + '*')
+            for global_ix, vid_class in enumerate(sorted(class_folders)):
+                label_array = None
+                sensors_array = None
+                print(vid_class)
+                all_img_files = glob.glob(vid_class + '/images/*.jpg')
 
-            for ix, img in enumerate(grouped_imag_files):
-                try:
-                    cur_image = cv2.resize(cv2.imread(img), (224, 224))
+                labels_file = glob.glob(vid_class + '/'+labels_file_name+'*.txt')
+                cur_labels = pd.read_csv(labels_file[0], delimiter=':', header=None)
+                cur_labels = np.array(cur_labels.iloc[:, 1], dtype=pd.Series)
 
-                    img_array[global_ix][ix] = cur_image
-                    label_array[global_ix][ix] = sensors_array[ix]
-                except IndexError:
-                    pass
-    return img_array, label_array
+                for sns in sensor_files:
+                    sensor_file = glob.glob(os.path.join(vid_class, sns+'*'))
+                    df = np.loadtxt(sensor_file[0], delimiter="\t")
+                    if sensors_array is None:
+                        sensors_array = df[:, :3]
+                        label_array = df[:, -1]
+                    else:
+                        sensors_array = np.column_stack((sensors_array, df[:, :3]))
+                        labels = df[:, -1]
+                        if not np.array_equal(label_array, labels):
+                            comp = label_array == labels
+                            if len(np.where(comp == False)) > 10:
+                                raise ValueError("Error on recording {} Label arrays between sensors are different"
+                                                 .format(vid_class))
+                label_array = label_array.astype("int")
+                real_labels_array = [activity_dict.index(cur_labels[int(value)].rstrip()) for value in label_array]
+                sensors_array = np.column_stack((sensors_array, real_labels_array))
 
-def extract_files(folders=['vuzix/']):
-    """After we have all of our videos split between train and test, and
-    all nested within folders representing their classes, we need to
-    make a data file that we can reference when training our RNN(s).
-    This will let us keep track of image sequences and other parts
-    of the training process.
-    We'll first need to extract images from each of the videos. We'll
-    need to record the following data in the file:
-    [train|test], class, filename, nb frames
-    Extracting can be done with ffmpeg:
-    `ffmpeg -i video.mpg image-%04d.jpg`
-    """
-    data_file = []
+                np.save(os.path.join(vid_class, "acc_gyr"), sensors_array)
 
-    for folder in folders:
-        class_folders = glob.glob(folder + '*')
+                for file in all_img_files:
+                    cur_index = int(int(file.split("_")[-1].split(".")[0]))
+                    dest_dir = None
+                    try:
+                        dest_dir = os.path.join(vid_class, "images", "_".join([str(label_array[cur_index-1]),
+                                                                               activity_dict[real_labels_array[cur_index-1]]
+                                                                              .replace("/", "_")]))
+                    except IndexError:
+                        os.remove(file)
+                        file = None
 
-        for vid_class in class_folders:
-            class_files = glob.glob(vid_class + '/*.mp4')
+                    finally:
 
-            for video_path in class_files:
-                # Get the parts of the file.
-                video_parts = get_video_parts(video_path)
+                        if not os.path.exists(dest_dir):
+                            os.mkdir(dest_dir)
 
-                filename, video_dir = video_parts
+                        if file is not None:
+                            shutil.move(file, dest_dir)
 
-                # Only extract if we haven't done it yet. Otherwise, just get
-                # the info.
-                # if seq in test_seqs:
-                #     prefix = "test/"
-                # else:
-                #     prefix = "train/"
+    def extract_files(self, folders=['vuzix/']):
+        """After we have all of our videos split between train and test, and
+        all nested within folders representing their classes, we need to
+        make a data file that we can reference when training our RNN(s).
+        This will let us keep track of image sequences and other parts
+        of the training process.
+        We'll first need to extract images from each of the videos. We'll
+        need to record the following data in the file:
+        [train|test], class, filename, nb frames
+        Extracting can be done with ffmpeg:
+        `ffmpeg -i video.mpg image-%04d.jpg`
+        """
+        data_file = []
 
-                cur_class_dir = video_dir + "images/"
-                if not bool(os.path.exists(cur_class_dir)):
-                    os.makedirs(cur_class_dir)
+        for folder in folders:
+            class_folders = glob.glob(folder + '*')
 
-                src = video_dir + '/' + filename
-                dest = cur_class_dir + filename.split['.'][0] + '_%04d.jpg'
-                call(["ffmpeg", "-i", src, dest])
+            for vid_class in sorted(class_folders):
+                class_files = glob.glob(vid_class + '/*.mp4')
 
-                # Now get how many frames it is.
-                # nb_frames = get_nb_frames_for_video(video_parts)
+                for video_path in class_files:
+                    # Get the parts of the file.
+                    video_parts = self.get_video_parts(video_path)
 
-                # data_file.append([train_or_test, classname, filename_no_ext, nb_frames])
+                    filename, video_dir = video_parts
 
-                # print("Generated %d frames for %s" % (nb_frames, filename_no_ext))
+                    # Only extract if we haven't done it yet. Otherwise, just get
+                    # the info.
+                    # if seq in test_seqs:
+                    #     prefix = "test/"
+                    # else:
+                    #     prefix = "train/"
+                    dataset = np.random.choice(['train', 'test'], p=[0.8, 0.2])
 
-    # with open('data_file.csv', 'w') as fout:
-    #     writer = csv.writer(fout)
-    #     writer.writerows(data_file)
+                    if dataset == "test":
+                        prefix = "test"
+                    else:
+                        prefix = "train"
 
-    print("Extracted and wrote %d video files." % (len(data_file)))
+                    src = os.path.join(folder, video_dir, filename)
+                    dest = os.path.join(folder, prefix, video_dir, "images")
 
-if __name__=='__main__':
-    extract_files()
-    assign_labels()
+                    if not bool(os.path.exists(os.path.join(folder, prefix))):
+                        os.makedirs(os.path.join(folder, prefix))
+
+                    if not bool(os.path.exists(dest)):
+                        os.makedirs(dest)
+
+                    dest = os.path.join(dest, filename.split('.')[0] + '_%04d.jpg')
+
+                    call(["ffmpeg", "-i", src, dest])
+
+                    txt_files = glob.glob(os.path.join(folder, video_dir, '*.txt'))
+                    for file in txt_files:
+                        shutil.copy(file, os.path.join(folder, prefix, video_dir))
+
+                    # Now get how many frames it is.
+                    # nb_frames = get_nb_frames_for_video(video_parts)
+
+                    # data_file.append([train_or_test, classname, filename_no_ext, nb_frames])
+
+                    # print("Generated %d frames for %s" % (nb_frames, filename_no_ext))
+
+        # with open('data_file.csv', 'w') as fout:
+        #     writer = csv.writer(fout)
+        #     writer.writerows(data_file)
+
+        print("Extracted and wrote %d video files." % (len(data_file)))
