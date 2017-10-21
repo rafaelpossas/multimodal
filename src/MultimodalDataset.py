@@ -77,20 +77,26 @@ class MultimodalDataset(object):
 
         }
         while True:
-            files = glob.glob(os.path.join(root, '*', '*', '*.jpg'))
+            files = sorted(glob.glob(os.path.join(root, '*', '*', '*.jpg')))
             all_grouped_files = list()
             if group_size > 1:
-                grouped_files = list()
                 cur_activity = ""
-                for img_file in sorted(files):
+                cur_seq = ""
 
-                    if len(grouped_files) == 0:
-                        cur_activity = img_file.split(os.path.sep)[-3]
+                for img_file in files:
 
-                    if len(grouped_files) < group_size:
-                        if cur_activity != img_file.split(os.path.sep)[-3]:
-                            grouped_files = list()
+                    img_file_split = img_file.split(os.path.sep)
+                    cur_ix = int(img_file_split[-1].split(".")[0].split("_")[-1])
+
+                    if cur_activity != img_file_split[-3] or cur_seq != img_file_split[-2]:
+                        cur_activity = img_file_split[-3]
+                        cur_seq = img_file_split[-2]
+                        grouped_files = list()
+
+                    if len(grouped_files) < group_size and cur_ix <= max_frames_per_video:
+
                         grouped_files.append(img_file)
+                        cur_ix += 1
 
                     if len(grouped_files) == group_size:
                         all_grouped_files.append(grouped_files)
