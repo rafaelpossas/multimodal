@@ -1,9 +1,8 @@
-import numpy as np
+from keras.callbacks import EarlyStopping
 
-
+from old.LSTM import SensorLSTM
 from src.SensorDataset_UCI import SensorDatasetUCI
-from src.LSTM import SensorLSTM
-from keras.callbacks import EarlyStopping, ModelCheckpoint
+
 latent_dim = 100
 input_dim = 3
 timesteps = 150

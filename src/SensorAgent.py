@@ -1,37 +1,77 @@
-import h5py
-import numpy as np
-import tensorflow as tf
+import argparse
+from keras.callbacks import *
 import keras
 from MultimodalDataset import MultimodalDataset
 
 
 class SensorAgent(object):
-
     model = None
 
-    def __init__(self, input_shape=None, output_shape=None, model_weights=None, layer_size=128):
-
-        self.model = self.get_model(input_shape=input_shape, output_shape=output_shape, layer_size=layer_size)
-        self.intermediate_model = self._get_intermediate_model()
-
-        if model_weights is not None:
-            self.model.load_weights(model_weights)
-
-
-
-    def get_state_for_input(self, input):
-        if len(input.shape) < 3:
-            input = input[np.newaxis, :, :]
-        return self.intermediate_model.predict(input)
-
-    def _get_intermediate_model(self):
-        intermediate_model = keras.models.Model(inputs=self.model.input, outputs=self.model.layers[-3].output)
-        return intermediate_model
+    def __init__(self):
+        self.dataset = None
 
     def predict(self, input=None):
         if len(input.shape) < 3:
             input = input[np.newaxis, :, :]
         return np.argmax(self.model.predict(input))
+
+    def evaluate_sensor_model(self, model, args):
+        if self.dataset is None:
+            self._load_dataset()
+        if model is None:
+            model = self.get_model(input_shape=(self.dataset['x_train'].shape[1], self.dataset['x_train'].shape[2]),
+                                   output_shape=self.dataset['y_train'].shape[1], layer_size=args.lstm_layer_size,
+                                   dropout=args.dropout)
+
+        model.load_weights(args.lstm_model_weights)
+        print(model.evaluate(self.dataset['x_test'], self.dataset['y_test']))
+
+    def _load_dataset(self):
+        self.dataset = dict()
+        multimodal_dataset = MultimodalDataset()
+
+        train_sns_x, train_sns_y = multimodal_dataset.load_all_sensor_files(
+            selected_sensors=['accx', 'accy', 'accz', 'gyrx', 'gyry', 'gyrz'],
+            sensor_root=args.train_dir)
+
+        train_onehot_y = np.eye(20)[np.squeeze(train_sns_y).astype(int)]
+
+        train_sns_x, train_onehot_y = multimodal_dataset.split_windows(args.sensor_chunk_size, args.sensor_step_size,
+                                                                       train_sns_x, train_onehot_y)
+
+        print(train_sns_x.shape)
+
+        test_sns_x, test_sns_y = multimodal_dataset.load_all_sensor_files(
+            selected_sensors=['accx', 'accy', 'accz', 'gyrx', 'gyry', 'gyrz'],
+            sensor_root=args.val_dir)
+
+        test_onehot_y = np.eye(20)[np.squeeze(test_sns_y).astype(int)]
+
+        test_sns_x, test_onehot_y = multimodal_dataset.split_windows(args.sensor_chunk_size, args.sensor_step_size,
+                                                                     test_sns_x, test_onehot_y)
+
+        print(test_sns_x.shape)
+
+        self.dataset['x_train'] = train_sns_x
+        self.dataset['y_train'] = train_onehot_y
+        self.dataset['x_test'] = test_sns_x
+        self.dataset['y_test'] = test_onehot_y
+
+    def train_sensor_model(self, args):
+        if self.dataset is None:
+            self._load_dataset()
+
+        model = self.get_model(input_shape=(self.dataset['x_train'].shape[1], self.dataset['x_train'].shape[2]),
+                               output_shape=self.dataset['y_train'].shape[1], layer_size=args.lstm_layer_size,
+                               dropout=args.dropout)
+
+        earlystopping = EarlyStopping(patience=20)
+
+        model_checkpoint = ModelCheckpoint('checkpoints/sensor_model.hdf5', save_best_only=True, monitor='val_acc')
+
+        model.fit(self.dataset['x_train'], self.dataset['y_train'], batch_size=args.batch_size, epochs=args.nb_epochs,
+                  validation_data=(self.dataset['x_test'], self.dataset['y_test']),
+                  callbacks=[earlystopping, model_checkpoint], verbose=2)
 
     def get_model(self, input_shape, output_shape, layer_size=128, optimizer='rmsprop', dropout=0.2):
         model = keras.models.Sequential()
@@ -42,15 +82,18 @@ class SensorAgent(object):
         return model
 
 
+if __name__ == "__main__":
+    a = argparse.ArgumentParser()
+    a.add_argument("--train_dir", default='multimodal_dataset/sensor/train')
+    a.add_argument("--val_dir", default='multimodal_dataset/sensor/test')
+    a.add_argument("--batch_size", default=1000, type=int)
+    a.add_argument("--nb_epochs", default=1000, type=int)
+    a.add_argument("--dropout", default=0.6, type=int)
+    a.add_argument("--sensor_chunk_size", int=15, type=int)
+    a.add_argument("--sensor_step_size", int=1, type=int)
+    a.add_argument("--lstm_layer_size", int=16, type=int)
 
-# if __name__ == "__main__":
-#     multimodal_dataset = MultimodalDataset()
-#     dataset_file = h5py.File("data/multimodal_full_test.hdf5")
-#     sns_x = dataset_file['x_sns'][:]
-#     sns_y = dataset_file['y_sns'][:]
-#     onehot_y = np.eye(20)[sns_y]
-#     total_size = len(sns_x)
-#     sns_x, onehot_y = multimodal_dataset.split_windows(50, 1, sns_x, onehot_y)
-#     sensor_agent = SensorAgent(model_weights=None,
-#                                input_shape=(5, sns_x.shape[2]),
-#                                output_shape=onehot_y.shape[1])
+    args = a.parse_args()
+
+    sns_agent = SensorAgent()
+    sns_agent.train_sensor_model(args)

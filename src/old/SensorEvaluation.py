@@ -13,8 +13,8 @@ import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import MinMaxScaler
 
+from old.LSTM import SensorLSTM
 from old.SensorDataset import SensorDataset
-from src.LSTM import SensorLSTM
 
 
 def plot_confusion_matrix(cm, classes,

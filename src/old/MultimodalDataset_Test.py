@@ -1,12 +1,12 @@
 import random
-import numpy as np
+
 import h5py
-from src.LSTM import SensorLSTM
-from src.MultimodalDataset import MultimodalDataset
-from sklearn.preprocessing import MinMaxScaler
-from keras.callbacks import ReduceLROnPlateau
+import numpy as np
 from keras.callbacks import EarlyStopping
 from keras.optimizers import RMSprop
+
+from old.LSTM import SensorLSTM
+from src.MultimodalDataset import MultimodalDataset
 
 num_frames_per_sample = 15
 def image_generator(file, batch_size):
