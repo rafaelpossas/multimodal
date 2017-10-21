@@ -64,7 +64,6 @@ class VisionAgent(object):
         predictions = Dense(nb_classes, activation='softmax')(x)  # new softmax layer
         model = Model(inputs=base_model.input, outputs=predictions)
 
-        model.summary()
         return model
 
     def setup_to_transfer_learn(self,model, base_model):
@@ -111,7 +110,7 @@ class VisionAgent(object):
 
         base_model = self.intermediate_lrcn_model(args)
         base_model = Model(inputs=base_model.input, outputs=base_model.layers[-4].output)
-        #base_model.trainable = False
+        base_model.trainable = False
 
         x = Input(shape=(None, self.IM_WIDTH, self.IM_HEIGHT, self.NUM_CHANNELS))
         td_base = TimeDistributed(base_model)(x)
@@ -122,7 +121,6 @@ class VisionAgent(object):
         model = Model(inputs=[x], outputs=y)
         model.compile(optimizer='rmsprop',
                       loss='categorical_crossentropy', metrics=['accuracy'])
-        model.summary()
         return base_model, model
 
     def train_lrcn(self, args):
@@ -134,8 +132,8 @@ class VisionAgent(object):
 
         total_train_size = MultimodalDataset.get_total_size(train_root)
         total_test_size = MultimodalDataset.get_total_size(test_root)
-        steps_per_epoch = math.ceil((total_train_size / group_size))
-        steps_per_epoch_val = math.ceil((total_test_size / group_size))
+        steps_per_epoch = math.ceil((total_train_size / (group_size * args.batch_size)))
+        steps_per_epoch_val = math.ceil((total_test_size / (group_size * args.batch_size)))
 
         base_model, model = self.get_lrcn_model(args)
 
@@ -153,25 +151,25 @@ class VisionAgent(object):
             callbacks=[],
             verbose=1)
 
-        # self.setup_to_finetune(model)
-        #
-        # checkpointer = ModelCheckpoint(
-        #     filepath='models/vision/lstmconv_{acc:2f}-{val_acc:.2f}.hdf5',
-        #     verbose=0,
-        #     monitor='val_acc',
-        #     save_best_only=True)
-        #
-        # model.fit_generator(
-        #     MultimodalDataset.flow_image_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
-        #                                           group_size=30),
-        #     steps_per_epoch=steps_per_epoch,
-        #     validation_data=MultimodalDataset.flow_image_from_dir(root=test_root, max_frames_per_video=450,
-        #                                                           batch_size=batch_size,
-        #                                                           group_size=group_size),
-        #     validation_steps=steps_per_epoch_val,
-        #     epochs=args.nb_epoch_fine_tune,
-        #     callbacks=[checkpointer],
-        #     verbose=1)
+        self.setup_to_finetune(model)
+
+        checkpointer = ModelCheckpoint(
+            filepath='models/vision/lstmconv_'+args.architecture+'_{acc:2f}-{val_acc:.2f}.hdf5',
+            verbose=0,
+            monitor='val_acc',
+            save_best_only=True)
+
+        model.fit_generator(
+            MultimodalDataset.flow_image_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
+                                                  group_size=30),
+            steps_per_epoch=steps_per_epoch,
+            validation_data=MultimodalDataset.flow_image_from_dir(root=test_root, max_frames_per_video=450,
+                                                                  batch_size=batch_size,
+                                                                  group_size=group_size),
+            validation_steps=steps_per_epoch_val,
+            epochs=args.nb_epoch_fine_tune,
+            callbacks=[checkpointer],
+            verbose=1)
 
 
     def get_fbf_model(self, args):
@@ -190,8 +188,6 @@ class VisionAgent(object):
             base_model = InceptionV3(input_shape=(self.IM_WIDTH, self.IM_HEIGHT, self.NUM_CHANNELS), weights='imagenet',
                                      include_top=False)
             self.NB_LAYERS_TO_FREEZE = 172
-
-        base_model.summary()
 
         model = self.add_new_last_layer(base_model, args.num_classes, args.fc_size, args.dropout)
 
@@ -277,8 +273,8 @@ if __name__=="__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--train_dir", default='multimodal_dataset/video/images/train')
     a.add_argument("--val_dir", default='multimodal_dataset/video/images/test')
-    a.add_argument("--nb_epoch_fine_tune", default=10, type=int)
-    a.add_argument("--nb_epoch_transfer_learn", default=5, type=int)
+    a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
+    a.add_argument("--nb_epoch_transfer_learn", default=10, type=int)
     a.add_argument('--fine_tune_lr', default=0.0001, type=float)
     a.add_argument("--fine_tuned_weights", default="")
     a.add_argument("--fbf_model_weights", default="")
@@ -291,7 +287,7 @@ if __name__=="__main__":
     a.add_argument("--limit_resources", default=False)
     a.add_argument("--fps", default=30, type=int)
     a.add_argument("--model_to_train", default="lrcn", type=str)
-    a.add_argument("--lstm_size", default=1024, type=int)
+    a.add_argument("--lstm_size", default=32, type=int)
     a.add_argument("--num_classes", default=20, type=int)
 
     vision_agent = VisionAgent()
