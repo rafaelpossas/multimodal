@@ -49,45 +49,6 @@ class VisionAgent(object):
             #self.model = self.get_model(model_weights)
             self.model.load_weights(model_weights)
 
-    def add_new_last_layer(self,base_model, nb_classes, fc_size=64, dropout=0.2):
-        """Add last layer to the convnet
-        Args:
-          base_model: keras model excluding top
-          nb_classes: # of classes
-        Returns:
-          new keras model with last layer
-        """
-        x = base_model.output
-        x = GlobalAveragePooling2D()(x)
-        x = Dense(fc_size, activation='relu')(x)  # new FC layer, random init
-        x = Dropout(dropout)(x)
-        predictions = Dense(nb_classes, activation='softmax')(x)  # new softmax layer
-        model = Model(inputs=base_model.input, outputs=predictions)
-
-        return model
-
-    def setup_to_transfer_learn(self,model, base_model):
-        """Freeze all layers and compile the model"""
-        if base_model is not None:
-            for layer in base_model.layers:
-                layer.trainable = False
-        else:
-            for layer in base_model.layers[:-2]:
-                layer.trainable = False
-        model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
-
-    def setup_to_finetune(self, model, fine_tune_lr=0.0001):
-        """Freeze the bottom NB_IV3_LAYERS and retrain the remaining top layers.
-        note: NB_IV3_LAYERS corresponds to the top 2 inception blocks in the inceptionv3 arch
-        Args:
-          model: keras model
-        """
-        for layer in model.layers[:self.NB_LAYERS_TO_FREEZE]:
-            layer.trainable = False
-        for layer in model.layers[self.NB_LAYERS_TO_FREEZE:]:
-            layer.trainable = True
-        model.compile(optimizer=SGD(lr=fine_tune_lr, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
-
     def predict(self, x, num_samples=15):
         if self.model is not None:
             pred = self.model.predict(x)
@@ -109,17 +70,22 @@ class VisionAgent(object):
         K.set_learning_phase(0)
 
         base_model = self.intermediate_lrcn_model(args)
-        base_model = Model(inputs=base_model.input, outputs=base_model.layers[-4].output)
+        base_model = Model(inputs=base_model.input, outputs=base_model.layers[-3].output)
         base_model.trainable = False
 
         x = Input(shape=(None, self.IM_WIDTH, self.IM_HEIGHT, self.NUM_CHANNELS))
         td_base = TimeDistributed(base_model)(x)
-        lstm = LSTM(args.lstm_size, return_sequences=False)(td_base)
-        dropout = Dropout(args.dropout)(lstm)
+        lstm = LSTM(args.lstm_size, input_shape=(10, 1024), return_sequences=True)(td_base)
+        lstm = Dropout(args.dropout)(lstm)
+        lstm = LSTM(int(args.lstm_size/2), return_sequences=True)(lstm)
+        flat = Flatten()(lstm)
+        fc = Dense(units=128)(flat)
+        dropout = Dropout(args.dropout)(fc)
         y = Dense(args.num_classes, activation='softmax')(dropout)
 
         model = Model(inputs=[x], outputs=y)
-        model.compile(optimizer='rmsprop',
+        optmizer = RMSprop(decay=0.000001)
+        model.compile(optimizer=optmizer,
                       loss='categorical_crossentropy', metrics=['accuracy'])
         return base_model, model
 
@@ -171,6 +137,38 @@ class VisionAgent(object):
             callbacks=[checkpointer],
             verbose=1)
 
+    def setup_to_transfer_learn(self,model, base_model):
+        """Freeze all layers and compile the model"""
+        if base_model is not None:
+            for layer in base_model.layers:
+                layer.trainable = False
+        else:
+            for layer in base_model.layers[:-2]:
+                layer.trainable = False
+        model.compile(optimizer='adadelta', loss='categorical_crossentropy', metrics=['accuracy'])
+
+    def setup_to_finetune(self, model, fine_tune_lr=0.0001):
+        """Freeze the bottom NB_IV3_LAYERS and retrain the remaining top layers.
+        note: NB_IV3_LAYERS corresponds to the top 2 inception blocks in the inceptionv3 arch
+        Args:
+          model: keras model
+        """
+        for layer in model.layers[:self.NB_LAYERS_TO_FREEZE]:
+            layer.trainable = False
+        for layer in model.layers[self.NB_LAYERS_TO_FREEZE:]:
+            layer.trainable = True
+        model.compile(optimizer=SGD(lr=fine_tune_lr, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
+
+    def add_new_last_layer(self,base_model, nb_classes, fc_size=64, dropout=0.2):
+
+        x = base_model.output
+        x = GlobalAveragePooling2D()(x)
+        x = Dense(fc_size, activation='relu')(x)
+        x = Dropout(dropout)(x)
+        predictions = Dense(nb_classes, activation='softmax')(x)  # new softmax layer
+        model = Model(inputs=base_model.input, outputs=predictions)
+
+        return model
 
     def get_fbf_model(self, args):
         base_model = None
@@ -198,7 +196,7 @@ class VisionAgent(object):
         nb_train_samples = MultimodalDataset.get_total_size(self.train_root)
         nb_val_samples = MultimodalDataset.get_total_size(self.test_root)
         nb_epoch_fine_tune = int(args.nb_epoch_fine_tune)
-        nb_epoch_transferlearn = int(args.nb_epoch_transferlearn)
+        nb_epoch_transferlearn = int(args.nb_epoch_transfer_learn)
         batch_size = int(args.batch_size)
 
         if args.dataset == 'vuzix':
@@ -211,18 +209,21 @@ class VisionAgent(object):
         # fine-tuning
 
         self.setup_to_transfer_learn(model, base_model)
+        checkpointer = ModelCheckpoint(
+            filepath='models/vision/finetune_'+args.architecture+'_{acc:2f}-{val_acc:.2f}.hdf5',
+            verbose=0,
+            monitor='val_acc',
+            save_best_only=True)
 
         if args.fine_tuned_weights == "" and args.fbf_model_weights == "":
 
             model.fit_generator(
-                flow_from_dir(root=args.train_dir, batch_size=args.batch_size),
+                flow_from_dir(root=args.train_dir, max_frames_per_video=150, batch_size=args.batch_size),
                 steps_per_epoch=math.ceil(nb_train_samples/batch_size),
                 epochs=nb_epoch_transferlearn,
-                validation_data=flow_from_dir(root=args.val_dir, batch_size=args.batch_size),
+                validation_data=flow_from_dir(root=args.val_dir, max_frames_per_video=150, batch_size=args.batch_size),
                 validation_steps=math.ceil(nb_val_samples/batch_size),
-                class_weight='auto')
-
-            model.save_weights('models/vision/'+args.architecture+'_finetune.hdf5')
+                callbacks=[checkpointer])
             # transfer learning
 
         else:
@@ -235,15 +236,15 @@ class VisionAgent(object):
 
         checkpointer = ModelCheckpoint(
             filepath='models/vision/'+args.architecture+'.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
-            verbose=0,
+            verbose=1,
             monitor='val_acc',
             save_best_only=True)
 
         history_tl = model.fit_generator(
-            MultimodalDataset.flow_image_from_dir(args.train_dir, batch_size=batch_size),
+            MultimodalDataset.flow_image_from_dir(args.train_dir, max_frames_per_video=150, batch_size=batch_size),
             epochs=nb_epoch_fine_tune,
             steps_per_epoch=math.ceil(nb_train_samples/batch_size),
-            validation_data=MultimodalDataset.flow_image_from_dir(args.val_dir, batch_size=batch_size),
+            validation_data=MultimodalDataset.flow_image_from_dir(args.val_dir, max_frames_per_video=150, batch_size=batch_size),
             validation_steps=math.ceil(nb_val_samples/batch_size),
             class_weight='auto',
             callbacks=[checkpointer])
@@ -274,20 +275,20 @@ if __name__=="__main__":
     a.add_argument("--train_dir", default='multimodal_dataset/video/images/train')
     a.add_argument("--val_dir", default='multimodal_dataset/video/images/test')
     a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
-    a.add_argument("--nb_epoch_transfer_learn", default=10, type=int)
-    a.add_argument('--fine_tune_lr', default=0.0001, type=float)
+    a.add_argument("--nb_epoch_transfer_learn", default=2, type=int)
+    a.add_argument('--fine_tune_lr', default=0.00006, type=float)
     a.add_argument("--fine_tuned_weights", default="")
     a.add_argument("--fbf_model_weights", default="")
     a.add_argument("--batch_size", default=150, type=int)
     a.add_argument("--plot", action="store_true")
-    a.add_argument("--dropout", default=0.6, type=float)
-    a.add_argument("--fc_size", default=1024, type=int)
-    a.add_argument("--architecture", default="inception")
+    a.add_argument("--dropout", default=0.8, type=float)
+    a.add_argument("--fc_size", default=512, type=int)
+    a.add_argument("--architecture", default="mobilenet")
     a.add_argument("--dataset", default="multimodal", type=str)
     a.add_argument("--limit_resources", default=False)
-    a.add_argument("--fps", default=30, type=int)
-    a.add_argument("--model_to_train", default="lrcn", type=str)
-    a.add_argument("--lstm_size", default=32, type=int)
+    a.add_argument("--fps", default=10, type=int)
+    a.add_argument("--model_to_train", default="fbf", type=str)
+    a.add_argument("--lstm_size", default=16, type=int)
     a.add_argument("--num_classes", default=20, type=int)
 
     vision_agent = VisionAgent()

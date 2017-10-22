@@ -59,7 +59,8 @@ class MultimodalDataset(object):
         return activities_files  # Self-explanatory.
 
     @staticmethod
-    def flow_image_from_dir(root, max_frames_per_video=450, batch_size=10, group_size=1):
+    def flow_image_from_dir(root, max_frames_per_video=450, batch_size=10, group_size=1, resize_shape=(448, 256),
+                            img_shape=(224,224)):
         x = []
         y = []
 
@@ -115,11 +116,18 @@ class MultimodalDataset(object):
 
                     for img_file in img:
 
-                        cur_img = cv2.resize(cv2.imread(img_file), (224, 224)).astype('float')
+                        cur_img = cv2.resize(cv2.imread(img_file), resize_shape,
+                                             interpolation = cv2.INTER_AREA).astype('float')
+
+                        crop_width_start = np.random.randint(0, 224)
+                        crop_heigth_start = np.random.randint(0, 32)
+
+                        cur_img = cur_img[crop_heigth_start:img_shape[1]+crop_heigth_start,
+                                          crop_width_start:crop_width_start+img_shape[0], :]
 
                         cur_img /= 255.
-                        cur_img -= 0.5
-                        cur_img *= 2.
+                        # cur_img -= 0.5
+                        # cur_img *= 2.
 
                         cur_img_batch.append(cur_img)
 
