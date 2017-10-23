@@ -11,7 +11,8 @@ from subprocess import call
 import cv2
 import h5py
 import numpy as np
-
+import shutil
+import pathlib
 
 activity_dict = {
     'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
@@ -156,19 +157,19 @@ def extract_files():
 
                 # Only extract if we haven't done it yet. Otherwise, just get
                 # the info.
-                dataset = np.random.choice(['train', 'test'], p=[0.8, 0.2])
-                if dataset == "test":
-                    prefix = "test/"
-                else:
-                    prefix = "train/"
+                # dataset = np.random.choice(['train', 'test'], p=[0.85, 0.15])
+                # if dataset == "test":
+                #     prefix = "test/"
+                # else:
+                #     prefix = "train/"
 
-                cur_class_dir = video_dir + "images/"+ prefix + class_label + '/'
+                cur_class_dir = video_dir + "images/" + class_label + '/'
                 if not bool(os.path.exists(cur_class_dir+'/'+seq)):
                     os.makedirs(cur_class_dir+'/'+seq)
 
-                src = video_dir + '/' + filename
+                src = video_dir + filename
                 dest = cur_class_dir + seq + '/' + class_label+'_'+seq+'_%04d.jpg'
-                call(["ffmpeg", "-i", src, dest])
+                call("ffmpeg -i "+src+" -vf fps=10 "+dest, shell=True)
 
                 # Now get how many frames it is.
                 #nb_frames = get_nb_frames_for_video(video_parts)
@@ -182,6 +183,9 @@ def extract_files():
     #     writer.writerows(data_file)
 
     print("Extracted and wrote %d video files." % (len(data_file)))
+
+
+
 
 def get_nb_frames_for_video(video_parts):
     """Given video parts of an (assumed) already extracted video, return

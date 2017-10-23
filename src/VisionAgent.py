@@ -41,13 +41,12 @@ class VisionAgent(object):
         'act19': (18, 'sit-ups'), 'act20': (19, 'cycling')
     }
 
-    def __init__(self, model_weights=None, train_root='multimodal_dataset/video/images/train',
-                 test_root='multimodal_dataset/video/images/test'):
-        self.train_root = train_root
-        self.test_root = test_root
-        if model_weights is not None:
-            #self.model = self.get_model(model_weights)
-            self.model.load_weights(model_weights)
+    def __init__(self, weights=None, architecture="mobilenet", num_classes=20, fc_size=512, dropout=0.6):
+
+        if weights is not None:
+            _, self.model = self.get_fbf_model(architecture=architecture,
+                                               num_classes=num_classes, fc_size=fc_size, dropout=dropout)
+            self.model.load_weights(weights)
 
     def predict(self, x, num_samples=15):
         if self.model is not None:
@@ -106,10 +105,10 @@ class VisionAgent(object):
         self.setup_to_transfer_learn(model, base_model)
 
         model.fit_generator(
-            MultimodalDataset.flow_image_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
+            MultimodalDataset.flow_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
                                                   group_size=30),
             steps_per_epoch=steps_per_epoch,
-            validation_data=MultimodalDataset.flow_image_from_dir(root=test_root, max_frames_per_video=450,
+            validation_data=MultimodalDataset.flow_from_dir(root=test_root, max_frames_per_video=450,
                                                                   batch_size=batch_size,
                                                                   group_size=group_size),
             validation_steps=steps_per_epoch_val,
@@ -126,10 +125,10 @@ class VisionAgent(object):
             save_best_only=True)
 
         model.fit_generator(
-            MultimodalDataset.flow_image_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
+            MultimodalDataset.flow_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
                                                   group_size=30),
             steps_per_epoch=steps_per_epoch,
-            validation_data=MultimodalDataset.flow_image_from_dir(root=test_root, max_frames_per_video=450,
+            validation_data=MultimodalDataset.flow_from_dir(root=test_root, max_frames_per_video=450,
                                                                   batch_size=batch_size,
                                                                   group_size=group_size),
             validation_steps=steps_per_epoch_val,
@@ -170,42 +169,42 @@ class VisionAgent(object):
 
         return model
 
-    def get_fbf_model(self, args):
+    def get_fbf_model(self, architecture="mobilenet", num_classes=20, fc_size=512, dropout=0.6):
         base_model = None
 
-        if args.architecture == "mobilenet":
+        if architecture == "mobilenet":
             base_model = MobileNet(input_shape=(self.IM_WIDTH, self.IM_HEIGHT, self.NUM_CHANNELS), weights='imagenet',
                                    include_top=False)
             self.NB_LAYERS_TO_FREEZE = 54
-        if args.architecture == "resnet":
+        if architecture == "resnet":
             base_model = ResNet50(input_shape=(self.IM_WIDTH, self.IM_HEIGHT, self.NUM_CHANNELS), weights='imagenet',
                                   include_top=False)
             self.NB_LAYERS_TO_FREEZE = 163
 
-        if args.architecture == "inception":
+        if architecture == "inception":
             base_model = InceptionV3(input_shape=(self.IM_WIDTH, self.IM_HEIGHT, self.NUM_CHANNELS), weights='imagenet',
                                      include_top=False)
             self.NB_LAYERS_TO_FREEZE = 172
 
-        model = self.add_new_last_layer(base_model, args.num_classes, args.fc_size, args.dropout)
+        model = self.add_new_last_layer(base_model, num_classes, fc_size, dropout)
 
         return base_model, model
 
     def train_fbf(self, args):
         """Use transfer learning and fine-tuning to train a network on a new dataset"""
-        nb_train_samples = MultimodalDataset.get_total_size(self.train_root)
-        nb_val_samples = MultimodalDataset.get_total_size(self.test_root)
+        nb_train_samples = MultimodalDataset.get_total_size(args.train_dir)
+        nb_val_samples = MultimodalDataset.get_total_size(args.val_dir)
         nb_epoch_fine_tune = int(args.nb_epoch_fine_tune)
         nb_epoch_transferlearn = int(args.nb_epoch_transfer_learn)
         batch_size = int(args.batch_size)
 
         if args.dataset == 'vuzix':
-            flow_from_dir = VuzixDataset.flow_images_from_dir
+            flow_from_dir = VuzixDataset.flow_from_dir
         else:
-            flow_from_dir = MultimodalDataset.flow_image_from_dir
+            flow_from_dir = MultimodalDataset.flow_from_dir
 
         # setup model
-        base_model, model = self.get_fbf_model(args)
+        base_model, model = self.get_fbf_model(args.architecture, args.num_classes, args.fc_size, args.dropout)
         # fine-tuning
 
         self.setup_to_transfer_learn(model, base_model)
@@ -241,10 +240,10 @@ class VisionAgent(object):
             save_best_only=True)
 
         history_tl = model.fit_generator(
-            MultimodalDataset.flow_image_from_dir(args.train_dir, max_frames_per_video=150, batch_size=batch_size),
+            flow_from_dir(args.train_dir, max_frames_per_video=150, batch_size=batch_size),
             epochs=nb_epoch_fine_tune,
             steps_per_epoch=math.ceil(nb_train_samples/batch_size),
-            validation_data=MultimodalDataset.flow_image_from_dir(args.val_dir, max_frames_per_video=150, batch_size=batch_size),
+            validation_data=flow_from_dir(args.val_dir, max_frames_per_video=150, batch_size=batch_size),
             validation_steps=math.ceil(nb_val_samples/batch_size),
             class_weight='auto',
             callbacks=[checkpointer])
@@ -272,8 +271,8 @@ class VisionAgent(object):
 
 if __name__=="__main__":
     a = argparse.ArgumentParser()
-    a.add_argument("--train_dir", default='multimodal_dataset/video/images/train')
-    a.add_argument("--val_dir", default='multimodal_dataset/video/images/test')
+    a.add_argument("--train_dir", default='multimodal_dataset/video/splits/train')
+    a.add_argument("--val_dir", default='multimodal_dataset/video/splits/test')
     a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
     a.add_argument("--nb_epoch_transfer_learn", default=2, type=int)
     a.add_argument('--fine_tune_lr', default=0.00006, type=float)
