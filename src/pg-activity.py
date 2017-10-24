@@ -10,6 +10,7 @@ import h5py
 import logging
 import datetime
 import sys
+import argparse
 class PGAgent:
 
     def __init__(self, state_size, action_size):
@@ -125,16 +126,17 @@ def evaluate_policy(dataset_file="multimodal_full_test.hdf5", agent_weights='act
     print("Steps: ", steps)
     return ((true_preds.sum()/len(true_y))*100)
 
-def train_policy():
+
+def train_policy(alpha, num_episodes=2000):
     sensor_agent = SensorAgent(weights="models/sensor_model.hdf5")
     vision_agent = VisionAgent(weights="models/vision_model.hdf5")
 
-    env = ActivityEnvironment(sensor_agent=sensor_agent, vision_agent=vision_agent)
+    env = ActivityEnvironment(sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=alpha)
     current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     # create a file handler
-    handler = logging.FileHandler('train_policy_'+current_time+'.log')
+    handler = logging.FileHandler(str(alpha)+'_train_policy_'+current_time+'.log')
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
@@ -159,8 +161,7 @@ def train_policy():
         agent.model.load_weights('activity.h5')
         all_scores = h5py.File('scores.hdf5')['scores'][:].tolist()
         logger.info('Last Average score: %.2f' % (sum(all_scores) / float(len(all_scores))))
-    best_acc = 0
-    while True:
+    while episode < num_episodes:
         action, prob = agent.act(state)
         agent.steps.append(action)
         state, reward, done, is_true_pred = env.step(action, verbose=False)
@@ -209,11 +210,9 @@ def train_policy():
                 # else:
                 #     acc = evaluate_policy()
 
-                if acc > best_acc:
-                    agent.save('activity.h5')
-                    best_acc = acc
+                agent.save(str(alpha)+'_activity.h5')
 
-                with h5py.File('stats.hdf5', "w") as hf:
+                with h5py.File(str(alpha)+'_stats.hdf5', "w") as hf:
                     hf.create_dataset("scores", data=all_scores)
                     hf.create_dataset("moving_average", data=moving_average)
                     hf.create_dataset('batch_acc', data=all_acc)
@@ -223,7 +222,20 @@ def train_policy():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        train_policy()
-    if len(sys.argv) > 1 and sys.argv[1] == 'evaluate':
-        print(evaluate_policy())
+    a = argparse.ArgumentParser()
+    a.add_argument("--grid_search", action="store_true")
+    a.add_argument("--train_policy", action="store_true")
+    a.add_argument("--evaluate_policy", action="store_true")
+    a.add_argument("--alpha", default=0, type=int)
+    a.add_argument("--num_episodes", default=2000, type=int)
+    args = a.parse_args()
+
+    if args.train_policy:
+        print("Single Instance Training for alpha {}".format(args.alpha))
+        train_policy(alpha=args.alpha, num_episodes=args.num_episodes)
+
+    if args.grid_search:
+        alphas = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+        for alpha in alphas:
+            print("Grid Search Training for alpha {}".format(alpha))
+            train_policy(alpha=alpha, num_episodes=args.num_episodes)

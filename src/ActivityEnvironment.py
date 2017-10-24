@@ -40,7 +40,8 @@ class ActivityEnvironment(object):
                  img_root="multimodal_dataset/video/images/",
                  sns_root="multimodal_dataset/sensor/",
                  sensors=['accx', 'accy', 'accz', 'gyrx','gyry','gyrz'],
-                 img_max_samples=150, sns_max_samples=150):
+                 img_max_samples=150, sns_max_samples=150,
+                 alpha=0):
 
         self.img_root = img_root
         self.sns_root = sns_root
@@ -63,7 +64,7 @@ class ActivityEnvironment(object):
                                            ((self.sns_chunk_size*self.total_seconds)/sns_max_samples)
         self.vision_consumption_per_step = (self.camera_consumption_per_hour/3600) * \
                                            ((self.img_chunk_size*self.total_seconds)/img_max_samples)
-
+        self.alpha = alpha
         self.state_generator = self.sample_from_episode()
         self.episode_generator = self._episode_generator()
 
@@ -91,7 +92,7 @@ class ActivityEnvironment(object):
             if pred_img != real and pred_sns == real:
                 total_reward = self.reward_wrong_pred
             if pred_img == real and pred_sns == real:
-                total_reward = 0
+                total_reward = self.alpha
 
         if pred_sns != real and pred_img != real:
             total_reward = 0
