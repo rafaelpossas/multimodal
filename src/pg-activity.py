@@ -3,7 +3,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Reshape, Flatten, LSTM
 from keras.optimizers import Adam
-from src.ActivityEnvironment import ActivityEnvironment
+from ActivityEnvironment import ActivityEnvironment
 from SensorAgent import SensorAgent
 from VisionAgent import VisionAgent
 import h5py

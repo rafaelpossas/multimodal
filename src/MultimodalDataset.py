@@ -3,7 +3,6 @@ from builtins import Exception, staticmethod
 import numpy as np
 import pandas as pd
 import os, shutil
-import h5py
 import glob
 import cv2
 from subprocess import call
