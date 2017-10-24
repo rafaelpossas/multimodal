@@ -75,6 +75,8 @@ class ActivityEnvironment(object):
 
     def calculate_reward(self, real, pred_sns, pred_img, sensor_type):
 
+        real = np.argmax(real)
+
         if sensor_type == self.SENSOR:
             if pred_sns == real and pred_img != real:
                 total_reward = self.reward_right_pred
@@ -89,7 +91,7 @@ class ActivityEnvironment(object):
             if pred_img != real and pred_sns == real:
                 total_reward = self.reward_wrong_pred
             if pred_img == real and pred_sns == real:
-                total_reward = 0.8
+                total_reward = 0
 
         if pred_sns != real and pred_img != real:
             total_reward = 0
@@ -102,23 +104,23 @@ class ActivityEnvironment(object):
         reward = None
         is_true_pred = None
 
-        # pred_sns = self.sensor_agent.predict(self.cur_sns_input)
-        # pred_img = self.vision_agent.predict(self.cur_img_input)
-        #
-        # if action == self.SENSOR:
-        #     reward = self.calculate_reward(self.cur_sns_label, pred_sns, pred_img, self.SENSOR)
-        #     self.current_consumption += self.sensor_consumption_per_step
-        #     is_true_pred = True if pred_sns == self.cur_label else False
-        #
-        # if action == self.CAMERA:
-        #     reward = self.calculate_reward(self.cur_img_label, pred_sns, pred_img, self.CAMERA)
-        #     self.current_consumption += self.vision_consumption_per_step
-        #     is_true_pred = True if pred_img == self.cur_label else False
-        #
-        # if verbose:
-        #     print('Current Consumption: %f. - Action: %d' % (self.current_consumption, action))
-        #
-        # done = self.current_consumption >= self.battery_size
+        pred_sns = self.sensor_agent.predict(self.cur_sns_input)
+        pred_img = self.vision_agent.predict(self.cur_img_input)
+
+        if action == self.SENSOR:
+            reward = self.calculate_reward(self.cur_sns_label, pred_sns, pred_img, self.SENSOR)
+            self.current_consumption += self.sensor_consumption_per_step
+            is_true_pred = True if pred_sns == np.argmax(self.cur_sns_label) else False
+
+        if action == self.CAMERA:
+            reward = self.calculate_reward(self.cur_img_label, pred_sns, pred_img, self.CAMERA)
+            self.current_consumption += self.vision_consumption_per_step
+            is_true_pred = True if pred_img == np.argmax(self.cur_img_label) else False
+
+        if verbose:
+            print('Current Consumption: %f. - Action: %d' % (self.current_consumption, action))
+
+        done = self.current_consumption >= self.battery_size
 
         #state = self.sensor_agent.get_state_for_input(self.cur_sns_input)
         state = self.cur_sns_input
@@ -142,10 +144,9 @@ class ActivityEnvironment(object):
         while True:
             all_dirs = glob(os.path.join(self.img_root, '*', '*'))
             np.random.shuffle(all_dirs)
-            img_x = []
 
             for act_seq in all_dirs:
-
+                img_x = []
                 source_split_arr = act_seq.split(os.path.sep)
                 sequence = source_split_arr[-1]
                 activity = source_split_arr[-2]

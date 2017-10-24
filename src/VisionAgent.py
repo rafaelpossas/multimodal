@@ -1,4 +1,3 @@
-
 from scipy.stats import mode
 
 from keras.layers import *
@@ -21,7 +20,6 @@ import tensorflow as tf
 
 
 class VisionAgent(object):
-
     model = None
     NB_LAYERS_TO_FREEZE = None
     NB_IV3_LAYERS_TO_FREEZE = 54
@@ -48,7 +46,7 @@ class VisionAgent(object):
                                                num_classes=num_classes, fc_size=fc_size, dropout=dropout)
             self.model.load_weights(weights)
 
-    def predict(self, x, num_samples=15):
+    def predict(self, x, num_samples=10):
         if self.model is not None:
             pred = self.model.predict(x)
             pred = np.argmax(pred, axis=1)
@@ -76,7 +74,7 @@ class VisionAgent(object):
         td_base = TimeDistributed(base_model)(x)
         lstm = LSTM(args.lstm_size, input_shape=(10, 1024), return_sequences=True)(td_base)
         lstm = Dropout(args.dropout)(lstm)
-        lstm = LSTM(int(args.lstm_size/2), return_sequences=True)(lstm)
+        lstm = LSTM(int(args.lstm_size / 2), return_sequences=True)(lstm)
         flat = Flatten()(lstm)
         fc = Dense(units=128)(flat)
         dropout = Dropout(args.dropout)(fc)
@@ -106,11 +104,11 @@ class VisionAgent(object):
 
         model.fit_generator(
             MultimodalDataset.flow_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
-                                                  group_size=30),
+                                            group_size=30),
             steps_per_epoch=steps_per_epoch,
             validation_data=MultimodalDataset.flow_from_dir(root=test_root, max_frames_per_video=450,
-                                                                  batch_size=batch_size,
-                                                                  group_size=group_size),
+                                                            batch_size=batch_size,
+                                                            group_size=group_size),
             validation_steps=steps_per_epoch_val,
             epochs=args.nb_epoch_transfer_learn,
             callbacks=[],
@@ -119,24 +117,24 @@ class VisionAgent(object):
         self.setup_to_finetune(model)
 
         checkpointer = ModelCheckpoint(
-            filepath='models/vision/lstmconv_'+args.architecture+'_{acc:2f}-{val_acc:.2f}.hdf5',
+            filepath='models/vision/lstmconv_' + args.architecture + '_{acc:2f}-{val_acc:.2f}.hdf5',
             verbose=0,
             monitor='val_acc',
             save_best_only=True)
 
         model.fit_generator(
             MultimodalDataset.flow_from_dir(root=train_root, max_frames_per_video=450, batch_size=batch_size,
-                                                  group_size=30),
+                                            group_size=30),
             steps_per_epoch=steps_per_epoch,
             validation_data=MultimodalDataset.flow_from_dir(root=test_root, max_frames_per_video=450,
-                                                                  batch_size=batch_size,
-                                                                  group_size=group_size),
+                                                            batch_size=batch_size,
+                                                            group_size=group_size),
             validation_steps=steps_per_epoch_val,
             epochs=args.nb_epoch_fine_tune,
             callbacks=[checkpointer],
             verbose=1)
 
-    def setup_to_transfer_learn(self,model, base_model):
+    def setup_to_transfer_learn(self, model, base_model):
         """Freeze all layers and compile the model"""
         if base_model is not None:
             for layer in base_model.layers:
@@ -156,9 +154,10 @@ class VisionAgent(object):
             layer.trainable = False
         for layer in model.layers[self.NB_LAYERS_TO_FREEZE:]:
             layer.trainable = True
-        model.compile(optimizer=SGD(lr=fine_tune_lr, momentum=0.9), loss='categorical_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer=SGD(lr=fine_tune_lr, momentum=0.9), loss='categorical_crossentropy',
+                      metrics=['accuracy'])
 
-    def add_new_last_layer(self,base_model, nb_classes, fc_size=64, dropout=0.2):
+    def add_new_last_layer(self, base_model, nb_classes, fc_size=64, dropout=0.2):
 
         x = base_model.output
         x = GlobalAveragePooling2D()(x)
@@ -209,7 +208,7 @@ class VisionAgent(object):
 
         self.setup_to_transfer_learn(model, base_model)
         checkpointer = ModelCheckpoint(
-            filepath='models/vision/finetune_'+args.architecture+'_{acc:2f}-{val_acc:.2f}.hdf5',
+            filepath='models/vision/finetune_' + args.architecture + '_{acc:2f}-{val_acc:.2f}.hdf5',
             verbose=0,
             monitor='val_acc',
             save_best_only=True)
@@ -218,10 +217,10 @@ class VisionAgent(object):
 
             model.fit_generator(
                 flow_from_dir(root=args.train_dir, max_frames_per_video=150, batch_size=args.batch_size),
-                steps_per_epoch=math.ceil(nb_train_samples/batch_size),
+                steps_per_epoch=math.ceil(nb_train_samples / batch_size),
                 epochs=nb_epoch_transferlearn,
                 validation_data=flow_from_dir(root=args.val_dir, max_frames_per_video=150, batch_size=args.batch_size),
-                validation_steps=math.ceil(nb_val_samples/batch_size),
+                validation_steps=math.ceil(nb_val_samples / batch_size),
                 callbacks=[checkpointer])
             # transfer learning
 
@@ -234,7 +233,7 @@ class VisionAgent(object):
         self.setup_to_finetune(model, args.fine_tune_lr)
 
         checkpointer = ModelCheckpoint(
-            filepath='models/vision/'+args.architecture+'.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
+            filepath='models/vision/' + args.architecture + '.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
             verbose=1,
             monitor='val_acc',
             save_best_only=True)
@@ -242,9 +241,9 @@ class VisionAgent(object):
         history_tl = model.fit_generator(
             flow_from_dir(args.train_dir, max_frames_per_video=150, batch_size=batch_size),
             epochs=nb_epoch_fine_tune,
-            steps_per_epoch=math.ceil(nb_train_samples/batch_size),
+            steps_per_epoch=math.ceil(nb_train_samples / batch_size),
             validation_data=flow_from_dir(args.val_dir, max_frames_per_video=150, batch_size=batch_size),
-            validation_steps=math.ceil(nb_val_samples/batch_size),
+            validation_steps=math.ceil(nb_val_samples / batch_size),
             class_weight='auto',
             callbacks=[checkpointer])
 
@@ -269,7 +268,7 @@ class VisionAgent(object):
         plt.show()
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--train_dir", default='multimodal_dataset/video/splits/train')
     a.add_argument("--val_dir", default='multimodal_dataset/video/splits/test')

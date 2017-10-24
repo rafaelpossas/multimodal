@@ -33,7 +33,7 @@ class PGAgent:
         # model.add(Convolution2D(32, 6, 6, subsample=(3, 3), border_mode='same',
         #                         activation='relu', init='he_uniform'))
         #model.add(Flatten())
-        model.add(LSTM(64, input_shape=(self.state_size, 9)))
+        model.add(LSTM(64, input_shape=(self.state_size, 6)))
         #model.add(Dense(64, activation='relu', init='he_uniform',input_shape=(self.state_size, )))
         #model.add(Dense(32, activation='relu', init='he_uniform'))
         model.add(Dense(self.action_size, activation='softmax'))
@@ -63,8 +63,8 @@ class PGAgent:
         discounted_rewards = np.zeros_like(rewards)
         running_add = 0
         for t in reversed(range(0, rewards.size)):
-            if rewards[t] != 0:
-                running_add = 0
+            # if rewards[t] != 0:
+            #     running_add = 0
             running_add = running_add * self.gamma + rewards[t]
             discounted_rewards[t] = running_add
         return discounted_rewards
@@ -151,7 +151,7 @@ def train_policy():
     episode = 0
     state = env.reset()
 
-    state_size = 5
+    state_size = 10
     action_size = 2
 
     agent = PGAgent(state_size, action_size)
