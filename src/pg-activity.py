@@ -56,6 +56,8 @@ class PGAgent:
         prob = aprob / np.sum(aprob)
         if stochastic is True:
             action = np.random.choice(self.action_size, 1, p=prob)[0]
+            epsilon_greedy = [0.9 if ix == action else 0.1 for ix in range(0, 2)]
+            action = np.random.choice(self.action_size, 1, p=epsilon_greedy )[0]
         else:
             action = aprob.argmax()
         return action, prob
