@@ -212,9 +212,9 @@ def train_policy(alpha, num_episodes=2000):
                 # else:
                 #     acc = evaluate_policy()
 
-                agent.save(str(alpha)+'_activity.h5')
+                agent.save(str(alpha)+'_activity_'+current_time+'.h5')
 
-                with h5py.File(str(alpha)+'_stats.hdf5', "w") as hf:
+                with h5py.File(str(alpha)+'_stats_'+current_time+'.hdf5', "w") as hf:
                     hf.create_dataset("scores", data=all_scores)
                     hf.create_dataset("moving_average", data=moving_average)
                     hf.create_dataset('batch_acc', data=all_acc)
