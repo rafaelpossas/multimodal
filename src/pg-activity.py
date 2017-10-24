@@ -56,6 +56,7 @@ class PGAgent:
         prob = aprob / np.sum(aprob)
         if stochastic is True:
             action = np.random.choice(self.action_size, 1, p=prob)[0]
+            #action = np.argmax(prob)
             epsilon_greedy = [0.9 if ix == action else 0.1 for ix in range(0, 2)]
             action = np.random.choice(self.action_size, 1, p=epsilon_greedy )[0]
         else:
@@ -149,6 +150,7 @@ def train_policy(alpha, num_episodes=2000):
     all_steps = []
     all_rewards = []
     all_true_preds = []
+    all_action_avg = []
     moving_average = []
     all_acc = []
     score = 0
@@ -188,6 +190,7 @@ def train_policy(alpha, num_episodes=2000):
 
             score_mean = sum(all_scores)/float(len(all_scores))
             action_avg = np.average(agent.probs, axis=0)
+            all_action_avg.append(action_avg)
 
             acc = np.array(agent.true_preds).sum() / float(len(agent.true_preds))
             all_acc.append(acc)
@@ -218,10 +221,11 @@ def train_policy(alpha, num_episodes=2000):
                     hf.create_dataset("scores", data=all_scores)
                     hf.create_dataset("moving_average", data=moving_average)
                     hf.create_dataset('batch_acc', data=all_acc)
-                    hf.create_dataset("steps", data=all_steps)
+                    hf.create_dataset("action_avg", data=all_action_avg)
                     hf.create_dataset("rewards", data=np.array(all_rewards))
                     hf.create_dataset("true_preds", data=all_true_preds)
 
+    logger.removeHandler(handler)
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
@@ -229,7 +233,7 @@ if __name__ == "__main__":
     a.add_argument("--train_policy", action="store_true")
     a.add_argument("--evaluate_policy", action="store_true")
     a.add_argument("--alpha", default=0, type=int)
-    a.add_argument("--num_episodes", default=2000, type=int)
+    a.add_argument("--num_episodes", default=20, type=int)
     args = a.parse_args()
 
     if args.train_policy:
