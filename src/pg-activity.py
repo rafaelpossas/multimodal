@@ -147,11 +147,12 @@ def train_policy(alpha, num_episodes=2000):
 
     load_weights = False
     all_scores = []
-    all_steps = []
     all_rewards = []
     all_true_preds = []
     all_action_avg = []
     moving_average = []
+    score_mean = 0
+    acc_mean = 0
     all_acc = []
     score = 0
     episode = 0
@@ -180,28 +181,25 @@ def train_policy(alpha, num_episodes=2000):
 
             sensor_steps = np.where(np.array(agent.steps) == 0)[0]
             vision_steps = np.where(np.array(agent.steps) == 1)[0]
-            all_steps.append([len(sensor_steps), len(vision_steps)])
-
-            step_mean = np.sum(np.sum(all_steps, axis=1), axis=0)/float(len(all_steps))
 
             all_rewards.append([np.array(agent.rewards)[sensor_steps].sum(),
                                 np.array(agent.rewards)[vision_steps].sum()])
             all_true_preds.append([np.array(agent.true_preds).sum(), len(agent.true_preds)])
 
-            score_mean = sum(all_scores)/float(len(all_scores))
+            score_mean = ((0.99 * score_mean) + (0.01 * score)) if score_mean > 0 else score
             action_avg = np.average(agent.probs, axis=0)
             all_action_avg.append(action_avg)
 
             acc = np.array(agent.true_preds).sum() / float(len(agent.true_preds))
             all_acc.append(acc)
-            acc_mean = sum(all_acc) / float(len(all_acc))
+            acc_mean = ((0.99 * acc_mean) + (0.01 * acc)) if acc_mean > 0 else acc
 
-            moving_average.append([score_mean, acc_mean, step_mean])
+            moving_average.append([score_mean, acc_mean])
 
             logger.info('Episode: %d - Reward: %.2f - Avg Score: %.2f - Accuracy: %.2f'
                         % (episode, score, score_mean, acc_mean))
-            logger.info('Number of steps - Sensor: %d, Vision: %d, Mean: %.2f'
-                        % (len(sensor_steps), len(vision_steps), step_mean))
+            logger.info('Number of steps - Sensor: %d, Vision: %d'
+                        % (len(sensor_steps), len(vision_steps)))
             logger.info('Action probability average - Sensor: %.2f Vision %.2f' % (action_avg[0], action_avg[1]))
 
             agent.train()
