@@ -78,20 +78,23 @@ class ActivityEnvironment(object):
             if pred_sns == real and pred_img != real:
                 total_reward = self.reward_right_pred
             if pred_sns != real and pred_img == real:
-                total_reward = self.reward_wrong_pred
+                total_reward = self.reward_wrong_pred - (1 - self.alpha)
             if pred_sns == real and pred_img == real:
-                total_reward = 1
+                total_reward = 1 - self.alpha
+
+            if pred_sns != real and pred_img != real:
+                total_reward = self.reward_right_pred
 
         if sensor_type == self.CAMERA:
             if pred_img == real and pred_sns != real:
                 total_reward = self.reward_right_pred
             if pred_img != real and pred_sns == real:
-                total_reward = self.reward_wrong_pred
+                total_reward = self.reward_wrong_pred - self.alpha
             if pred_img == real and pred_sns == real:
                 total_reward = self.alpha
 
-        if pred_sns != real and pred_img != real:
-            total_reward = 0
+            if pred_sns != real and pred_img != real:
+                total_reward = self.reward_wrong_pred
 
         return total_reward
 
