@@ -10,12 +10,14 @@ from src.MultimodalDataset import MultimodalDataset
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('batch_size', 21760, 'size of training batches')
+tf.app.flags.DEFINE_integer('batch_size', 2000, 'size of training batches')
 tf.app.flags.DEFINE_integer('epochs', 5000, 'number of training iterations')
-tf.app.flags.DEFINE_integer('timesteps_input', 15, 'number of steps for the input tensor')
+tf.app.flags.DEFINE_integer('timesteps_input', 10, 'number of steps for the input tensor')
 tf.app.flags.DEFINE_string('checkpoint_file_path', 'checkpoints/rnn.ckpt', 'path to checkpoint file')
 tf.app.flags.DEFINE_string('train_data', 'data/mnist_train.csv', 'path to train and test data')
 tf.app.flags.DEFINE_string('summary_dir', 'graphs', 'path to directory for storing summaries')
+tf.app.flags.DEFINE_string("train_dir", 'multimodal_dataset/video/splits/train', 'path to training data')
+tf.app.flags.DEFINE_string("val_dir", 'multimodal_dataset/video/splits/test', 'path to test data')
 
 
 class SaveAtEnd(tf.train.SessionRunHook):
@@ -92,10 +94,16 @@ class RNN:
 
         loss_per_epoch = []
         accuracy_per_epoch = []
+        generator = MultimodalDataset.flow_from_dir(root=FLAGS.val_dir, max_frames_per_video=150,
+                                                        group_size=FLAGS.timesteps_input,
+                                                        batch_size=FLAGS.batch_size, type="sns")
+
+        nb_train_samples = MultimodalDataset.get_total_size(FLAGS.train_dir)
+        nb_val_samples = MultimodalDataset.get_total_size(FLAGS.val_dir)
 
         with tf.Graph().as_default():
 
-            x = tf.placeholder(shape=[None, self._timesteps_input, 6], dtype=tf.float32, name='input')
+            x = tf.placeholder(shape=[None, FLAGS.timesteps_input, 6], dtype=tf.float32, name='input')
             y = tf.placeholder(shape=[None, self._output_size], dtype=tf.float32, name='output')
 
             global_step = tf.contrib.framework.get_or_create_global_step()
@@ -109,9 +117,6 @@ class RNN:
             init = tf.global_variables_initializer()
             #saver = tf.train.Saver()
 
-            iterator = dataset.make_one_shot_iterator()
-            next_element = iterator.get_next()
-
             checkpoint_saver_hook = SaveAtEnd()
             training_session = tf.train.MonitoredTrainingSession(hooks=[checkpoint_saver_hook])
 
@@ -119,14 +124,14 @@ class RNN:
                 writer = tf.summary.FileWriter(FLAGS.summary_dir, sess.graph)
                 sess.run(init)
                 while not sess.should_stop():
-                    if counter != 0 and counter % math.ceil(input_x.shape[0] / self._batch_size) == 0:
-                        if epoch % 10 == 0:
-                            print("Epoch {} running on batch size of {} loss {} accuracy {}"
-                                  .format(epoch, self._batch_size, np.mean(loss_per_epoch), np.mean(accuracy_per_epoch)))
+                    if counter != 0 and counter == math.ceil(nb_train_samples / FLAGS.batch_size):
+                        print("Epoch {} running on batch size of {} loss {} accuracy {}"
+                              .format(epoch, self._batch_size, np.mean(loss_per_epoch), np.mean(accuracy_per_epoch)))
                         epoch += 1
                         loss_per_epoch = []
+                        counter = 0
 
-                    x_batch, y_batch = sess.run(next_element)
+                    x_batch, y_batch = next(generator)
                     _, epoch_loss, acc, summary = sess.run([train_op, loss, accuracy, summary_op], feed_dict={x: x_batch,
                                                                                                y: y_batch})
                     accuracy_per_epoch.append(acc)
@@ -143,7 +148,7 @@ def load_sensor_dataset():
     multimodal_dataset = MultimodalDataset()
 
     train_sns_x, train_sns_y = multimodal_dataset.load_all_sensor_files(selected_sensors=['accx','accy','accz','gyrx','gyry','gyrz'],
-                                                                        sensor_root='multimodal_dataset/sensor/train')
+                                                                        sensor_root='multimodal_dataset/sensor/')
 
     train_onehot_y = np.eye(20)[np.squeeze(train_sns_y).astype(int)]
 
@@ -152,7 +157,7 @@ def load_sensor_dataset():
     print(train_sns_x.shape)
 
     test_sns_x, test_sns_y =  multimodal_dataset.load_all_sensor_files(selected_sensors=['accx','accy','accz','gyrx','gyry','gyrz'],
-                                                                        sensor_root='multimodal_dataset/sensor/test')
+                                                                        sensor_root='multimodal_dataset/sensor/')
     test_onehot_y = np.eye(20)[np.squeeze(test_sns_y).astype(int)]
 
     test_sns_x, test_onehot_y = multimodal_dataset.split_windows(FLAGS.timesteps_input, 1, test_sns_x, test_onehot_y)

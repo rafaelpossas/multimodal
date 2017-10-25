@@ -45,6 +45,7 @@ class VisionAgent(object):
             _, self.model = self.get_fbf_model(architecture=architecture,
                                                num_classes=num_classes, fc_size=fc_size, dropout=dropout)
             self.model.load_weights(weights)
+            self.model.save("vision_model_full.hdf5")
 
     def predict(self, x, num_samples=10):
         if self.model is not None:

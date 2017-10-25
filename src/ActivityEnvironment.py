@@ -75,26 +75,34 @@ class ActivityEnvironment(object):
         real = np.argmax(real)
 
         if sensor_type == self.SENSOR:
+            # When Sensor is Right
             if pred_sns == real and pred_img != real:
                 total_reward = self.reward_right_pred
-            if pred_sns != real and pred_img == real:
-                total_reward = self.reward_wrong_pred - (1 - self.alpha)
+
             if pred_sns == real and pred_img == real:
                 total_reward = 1 - self.alpha
 
+            # When Sensor is Wrong
+            if pred_sns != real and pred_img == real:
+                total_reward = self.reward_wrong_pred - (1 - self.alpha)
+
             if pred_sns != real and pred_img != real:
-                total_reward = self.reward_right_pred
+                total_reward = self.reward_right_pred - (1 - self.alpha)
 
         if sensor_type == self.CAMERA:
+            # When Camera is Right
             if pred_img == real and pred_sns != real:
                 total_reward = self.reward_right_pred
-            if pred_img != real and pred_sns == real:
-                total_reward = self.reward_wrong_pred - self.alpha
+
             if pred_img == real and pred_sns == real:
                 total_reward = self.alpha
 
+            # When Camera is Wrong
+            if pred_img != real and pred_sns == real:
+                total_reward = self.reward_wrong_pred - self.alpha
+
             if pred_sns != real and pred_img != real:
-                total_reward = self.reward_wrong_pred
+                total_reward = self.reward_wrong_pred - self.alpha
 
         return total_reward
 

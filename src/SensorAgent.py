@@ -15,6 +15,7 @@ class SensorAgent(object):
             self.model = self.get_model(input_shape=(sns_chunk_size, num_sensors * 3),
                                         output_shape=num_classes, layer_size=network_layer_size)
             self.model.load_weights(weights)
+            self.model.save("sensor_model_full.hdf5")
 
     def predict(self, input=None):
         if len(input.shape) < 3:
