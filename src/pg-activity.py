@@ -11,6 +11,54 @@ import logging
 import datetime
 import sys
 import argparse
+class LinearDecayEpsilonGreedy():
+    """Epsilon-greedy with linearyly decayed epsilon
+    Args:
+      start_epsilon: max value of epsilon
+      end_epsilon: min value of epsilon
+      decay_steps: how many steps it takes for epsilon to decay
+      random_action_func: function with no argument that returns action
+      logger: logger used
+    """
+
+    def __init__(self, start_epsilon, end_epsilon,
+                 decay_steps):
+        assert start_epsilon >= 0 and start_epsilon <= 1
+        assert end_epsilon >= 0 and end_epsilon <= 1
+        assert decay_steps >= 0
+        self.start_epsilon = start_epsilon
+        self.end_epsilon = end_epsilon
+        self.decay_steps = decay_steps
+        self.epsilon = start_epsilon
+
+    def select_action_epsilon_greedily(self, epsilon, probs):
+        random_number = np.random.rand()
+        if random_number < epsilon:
+            return self.random_action_func()
+        else:
+            return self.greedy_action_func(probs)
+
+    def greedy_action_func(self, probs):
+        return np.argmax(probs)
+
+    def random_action_func(self):
+        return np.random.choice([0, 1], p=[0.5, 0.5])
+
+    def compute_epsilon(self, t):
+        if t > self.decay_steps:
+            return self.end_epsilon
+        else:
+            epsilon_diff = self.end_epsilon - self.start_epsilon
+            return self.start_epsilon + epsilon_diff * (t / self.decay_steps)
+
+    def select_action(self, t, probs):
+        self.epsilon = self.compute_epsilon(t)
+        a = self.select_action_epsilon_greedily(self.epsilon, probs)
+        return a
+
+    def __repr__(self):
+        return 'LinearDecayEpsilonGreedy(epsilon={})'.format(self.epsilon)
+
 class PGAgent:
 
     def __init__(self, state_size, action_size):
@@ -26,15 +74,16 @@ class PGAgent:
         self.true_preds = []
         self.model = self._build_model()
         self.model.summary()
+        self.epsilon_greedy = LinearDecayEpsilonGreedy(1, 0.05, 100)
 
 
-    def _build_model(self):
+    def _build_model(self, batches=14):
         model = Sequential()
         #model.add(Reshape((1, self.state_size, 9), input_shape=(self.state_size, 9)))
         # model.add(Convolution2D(32, 6, 6, subsample=(3, 3), border_mode='same',
         #                         activation='relu', init='he_uniform'))
         #model.add(Flatten())
-        model.add(LSTM(64, input_shape=(self.state_size, 6)))
+        model.add(LSTM(64, batch_input_shape=(1, self.state_size, 6), stateful=True))
         #model.add(Dense(64, activation='relu', init='he_uniform',input_shape=(self.state_size, )))
         #model.add(Dense(32, activation='relu', init='he_uniform'))
         model.add(Dense(self.action_size, activation='softmax'))
@@ -49,16 +98,17 @@ class PGAgent:
         self.states.append(state)
         self.rewards.append(reward)
 
-    def act(self, state, stochastic=True):
+    def act(self, state, stochastic=True, t=0):
         state = state[np.newaxis, :, :]
         aprob = self.model.predict(state, batch_size=1).flatten()
         self.probs.append(aprob)
         prob = aprob / np.sum(aprob)
         if stochastic is True:
-            action = np.random.choice(self.action_size, 1, p=prob)[0]
-            #action = np.argmax(prob)
-            epsilon_greedy = [0.9 if ix == action else 0.1 for ix in range(0, 2)]
-            action = np.random.choice(self.action_size, 1, p=epsilon_greedy )[0]
+            action = self.epsilon_greedy.select_action(t, prob)
+            #action = np.random.choice(self.action_size, 1, p=prob)[0]
+            # action = np.argmax(prob)
+            # epsilon_greedy = [0.9 if ix == action else 0.1 for ix in range(0, 2)]
+            # action = np.random.choice(self.action_size, 1, p=epsilon_greedy )[0]
         else:
             action = aprob.argmax()
         return action, prob
@@ -85,7 +135,17 @@ class PGAgent:
         gradients *= rewards
         X = np.squeeze(np.vstack([self.states]))
         Y = self.probs + self.learning_rate * np.squeeze(np.vstack([gradients]))
-        self.model.train_on_batch(X, Y)
+
+        for x, y in zip(X,Y):
+
+            if len(x.shape) < 3:
+                x = x[np.newaxis, :, :]
+            if len(y.shape) < 2:
+                y = y[np.newaxis, :]
+
+            self.model.train_on_batch(x, y)
+
+        self.model.reset_states()
         self.states, self.probs, self.gradients, self.rewards,self.steps, self.true_preds = [], [], [], [], [], []
 
     def load(self, name):
@@ -167,7 +227,7 @@ def train_policy(alpha, num_episodes=2000):
         all_scores = h5py.File('scores.hdf5')['scores'][:].tolist()
         logger.info('Last Average score: %.2f' % (sum(all_scores) / float(len(all_scores))))
     while episode < num_episodes:
-        action, prob = agent.act(state)
+        action, prob = agent.act(state, t=episode)
         agent.steps.append(action)
         state, reward, done, is_true_pred = env.step(action, verbose=False)
         agent.true_preds.append(is_true_pred)
@@ -186,17 +246,17 @@ def train_policy(alpha, num_episodes=2000):
                                 np.array(agent.rewards)[vision_steps].sum()])
             all_true_preds.append([np.array(agent.true_preds).sum(), len(agent.true_preds)])
 
-            score_mean = ((0.99 * score_mean) + (0.01 * score)) if score_mean > 0 else score
-            action_avg = np.average(agent.probs, axis=0)
-            all_action_avg.append(action_avg)
+            score_mean = np.average(all_scores)
+            all_action_avg.append(np.average(agent.probs, axis=0))
+            action_avg = np.average(all_action_avg, axis=0)
 
             acc = np.array(agent.true_preds).sum() / float(len(agent.true_preds))
             all_acc.append(acc)
-            acc_mean = ((0.99 * acc_mean) + (0.01 * acc)) if acc_mean > 0 else acc
+            acc_mean = np.average(all_acc)
 
             moving_average.append([score_mean, acc_mean])
 
-            logger.info('Episode: %d - Reward: %.2f - Avg Score: %.2f - Accuracy: %.2f'
+            logger.info('Episode: %d - Reward: %.2f - Avg Score: %.2f - Avg Accuracy: %.2f'
                         % (episode, score, score_mean, acc_mean))
             logger.info('Number of steps - Sensor: %d, Vision: %d'
                         % (len(sensor_steps), len(vision_steps)))

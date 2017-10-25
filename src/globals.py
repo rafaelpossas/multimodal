@@ -21,3 +21,11 @@ def sensor_columns():
                'magx', 'magy', 'magz',
                'rotx', 'roty', 'rotz', 'rote']
     return all_sns
+
+
+def activity_dict_vuzix():
+    dict = ['walking', 'climbing stairs', 'chopping food', 'riding elevator', 'brushing teeth',
+            'riding escalator', 'talking to people', 'watching tv', 'eating', 'cooking on stove',
+            'browsing mobile phone', 'washing dishes', 'working on pc', 'reading', 'writing',
+            'lying down', 'running', 'doing push ups', 'doing sit ups', 'cycling']
+    return dict
