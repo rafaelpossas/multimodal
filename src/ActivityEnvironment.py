@@ -64,6 +64,8 @@ class ActivityEnvironment(object):
         self.state_generator = self.sample_from_episode()
         self.episode_generator = self._episode_generator()
 
+        self.datasets_full_sweeps = 0
+
     def reset(self):
         self.current_consumption = 0
         self.done = False
@@ -87,7 +89,7 @@ class ActivityEnvironment(object):
                 total_reward = self.reward_wrong_pred - (1 - self.alpha)
 
             if pred_sns != real and pred_img != real:
-                total_reward = self.reward_wrong_pred - (1 - self.alpha)
+                total_reward = self.reward_wrong_pred
 
         if sensor_type == self.CAMERA:
             # When Camera is Right
@@ -102,7 +104,7 @@ class ActivityEnvironment(object):
                 total_reward = self.reward_wrong_pred - self.alpha
 
             if pred_sns != real and pred_img != real:
-                total_reward = self.reward_wrong_pred - self.alpha
+                total_reward = self.reward_wrong_pred
 
         return total_reward
 
@@ -149,6 +151,7 @@ class ActivityEnvironment(object):
                 yield done, i_x, i_y, s_x, s_y
 
     def _episode_generator(self):
+        self.datasets_full_sweeps = 0
         while True:
             all_dirs = glob(os.path.join(self.img_root, '*', '*'))
             np.random.shuffle(all_dirs)
@@ -172,6 +175,8 @@ class ActivityEnvironment(object):
                 sns_y = np.eye(20)[np.repeat(activity_number, len(sns_x))]
 
                 yield np.array(img_x), img_y, sns_x, sns_y
+
+            self.datasets_full_sweeps += 1
 
 if __name__ == "__main__":
     act_env = ActivityEnvironment()

@@ -11,6 +11,8 @@ import logging
 import datetime
 import sys
 import argparse
+from MultimodalDataset import MultimodalDataset
+
 class LinearDecayEpsilonGreedy():
     """Epsilon-greedy with linearyly decayed epsilon
     Args:
@@ -104,8 +106,12 @@ class PGAgent:
         self.probs.append(aprob)
         prob = aprob / np.sum(aprob)
         if stochastic is True:
-            action = self.epsilon_greedy.select_action(t, prob)
-            #action = np.random.choice(self.action_size, 1, p=prob)[0]
+            #action = self.epsilon_greedy.select_action(t, prob)
+
+            if t < 100:
+                prob = [0.5, 0.5]
+
+            action = np.random.choice(self.action_size, 1, p=prob)[0]
             # action = np.argmax(prob)
             # epsilon_greedy = [0.9 if ix == action else 0.1 for ix in range(0, 2)]
             # action = np.random.choice(self.action_size, 1, p=epsilon_greedy )[0]
@@ -155,39 +161,29 @@ class PGAgent:
         self.model.save_weights(name)
 
 
-def evaluate_policy(dataset_file="multimodal_full_test.hdf5", agent_weights='activity.h5', state_size=5, action_size=2):
-    env = ActivityEnvironment(dataset_file=dataset_file,
-                              sensor_model_weights='sensor_model.hdf5',
-                              vision_model_weights='checkpoints/inception.029-1.08.hdf5',
-                              split=False)
+def evaluate_policy(files_dir, agent_weights='activity.h5', state_size=10, action_size=2):
+
+    sensor_agent = SensorAgent(weights="models/sensor_model.hdf5")
+    vision_agent = VisionAgent(weights="models/vision_model.hdf5")
+
+    env = ActivityEnvironment(sensor_agent=sensor_agent, vision_agent=vision_agent)
+
     agent = PGAgent(state_size, action_size)
+
     if agent_weights is not None:
         agent.model.load_weights(agent_weights)
-    preds = []
-    true_y = []
-    steps = [0, 0]
-    for i in range(0, env.total_size):
-        env.read_sensors([i])
-        while not env.current_x_activity_sns_buffer.empty():
-            sns_x = env.current_x_activity_sns_buffer.get()
-            img_x = env.current_x_activity_img_buffer.get()
-            y = env.current_y_activity_sns_buffer.get()
-            state = sns_x
-            action, prob = agent.act(state, stochastic=False)
 
-            if action == env.SENSOR:
-                pred = env.sensor_agent.predict(sns_x)
-                steps[0] += 1
-            if action == env.CAMERA:
-                pred = env.vision_agent.predict(img_x)
-                steps[1] += 1
+    camera_actions = []
+    sensor_actions = []
+    while env.datasets_full_sweeps < 1:
+        _, state_img, y_img, state_sns, y_sns = next(env.state_generator)
+        action, prob = agent.act(state_sns, stochastic=False)
+        if action == env.CAMERA:
+            camera_actions.append(state_img)
+        else:
+            sensor_actions.append(state_sns)
 
-            preds.append(pred)
-            true_y.append(y)
-            true_preds = np.array(preds) == np.array(true_y)
-
-    print("Steps: ", steps)
-    return ((true_preds.sum()/len(true_y))*100)
+    print("Camera Actions %.2f - Sensor Actions %.2f" % (len(camera_actions), len(sensor_actions)))
 
 
 def train_policy(alpha, num_episodes=2000):
@@ -292,6 +288,8 @@ if __name__ == "__main__":
     a.add_argument("--evaluate_policy", action="store_true")
     a.add_argument("--alpha", default=0, type=int)
     a.add_argument("--num_episodes", default=20, type=int)
+    a.add_argument("--val_dir", default="multimodal_dataset/video/splits/test")
+    a.add_argument("--agent_weights", default='0_activity_2017_10_25_12_40.h5')
     args = a.parse_args()
 
     if args.train_policy:
@@ -303,3 +301,6 @@ if __name__ == "__main__":
         for alpha in alphas:
             print("Grid Search Training for alpha {}".format(alpha))
             train_policy(alpha=alpha, num_episodes=args.num_episodes)
+
+    if args.evaluate_policy:
+        evaluate_policy(args.val_dir,agent_weights=args.agent_weights)

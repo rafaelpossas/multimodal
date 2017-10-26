@@ -169,7 +169,7 @@ class VisionAgent(object):
 
         return model
 
-    def get_fbf_model(self, architecture="mobilenet", num_classes=20, fc_size=512, dropout=0.6):
+    def get_fbf_model(self, architecture="mobilenet", num_classes=20, fc_size=512, dropout=0.6, pre_trained_model=None):
         base_model = None
 
         if architecture == "mobilenet":
@@ -188,6 +188,9 @@ class VisionAgent(object):
 
         model = self.add_new_last_layer(base_model, num_classes, fc_size, dropout)
 
+        if pre_trained_model is not None:
+            model.load_weights(pre_trained_model)
+
         return base_model, model
 
     def train_fbf(self, args):
@@ -204,7 +207,8 @@ class VisionAgent(object):
             flow_from_dir = MultimodalDataset.flow_from_dir
 
         # setup model
-        base_model, model = self.get_fbf_model(args.architecture, args.num_classes, args.fc_size, args.dropout)
+        base_model, model = self.get_fbf_model(args.architecture, args.num_classes, args.fc_size, args.dropout,
+                                               args.pre_trained_model)
         # fine-tuning
 
         self.setup_to_transfer_learn(model, base_model)
@@ -278,6 +282,7 @@ if __name__ == "__main__":
     a.add_argument('--fine_tune_lr', default=0.00006, type=float)
     a.add_argument("--fine_tuned_weights", default="")
     a.add_argument("--fbf_model_weights", default="")
+    a.add_argument("--pre_trained_model", default="imagenet")
     a.add_argument("--batch_size", default=150, type=int)
     a.add_argument("--plot", action="store_true")
     a.add_argument("--dropout", default=0.8, type=float)
