@@ -1,15 +1,14 @@
-import cv2
 import tensorflow as tf
 import logging
 import sys, signal
 import time
-import os
-from a3c import A3C
-from envs import create_env
 from arguments import args
 import os
-import distutils.version
-from EgocentricEnvironment import EgocentricEnvironment
+from SensorAgent import SensorAgent
+from VisionAgent import VisionAgent
+from ActivityEnvironment import ActivityEnvironment
+from a3c import A3C
+import datetime
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -22,9 +21,15 @@ class FastSaver(tf.train.Saver):
                                     latest_filename, meta_graph_suffix, False)
 
 def run(args, server):
-    env = create_env(args.env_id, client_id=str(args.task),
-                     remotes=args.remotes)
-    act_env = ActivityEnvironment()
+    # env = create_env(args.env_id, client_id=str(args.task),
+    #                  remotes=args.remotes)
+    sensor_agent = SensorAgent()
+    vision_agent = VisionAgent()
+    current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
+    env = ActivityEnvironment(img_root="multimodal_dataset/video/images/", sns_root="multimodal_dataset/sensor/",
+                              sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=0.35, env_id=args.task,
+                              time=current_time)
+
     trainer = A3C(env, args.task, args.visualise)
 
     # Variable names that start with 'local' are not saved in checkpoints.

@@ -4,23 +4,33 @@ import keras
 from keras.optimizers import *
 from MultimodalDataset import MultimodalDataset
 import math
+from tensorflow.python.platform import gfile
 import datetime as dt
 
 class SensorAgent(object):
     model = None
 
     def __init__(self, weights=None, network_layer_size=128,
-                 sns_chunk_size=10, num_sensors=2, num_classes=20):
+                 sns_chunk_size=10, num_sensors=2, num_classes=20,
+                 tf_input=None, tf_output=None):
         if weights is not None:
             self.model = self.get_model(input_shape=(sns_chunk_size, num_sensors * 3),
                                         output_shape=num_classes, layer_size=network_layer_size)
             self.model.load_weights(weights)
-            self.model.save("sensor_model_full.hdf5")
+            self.input_tf, self.output_tf = tf_input, tf_output
+            #self.model.save("sensor_model_full.hdf5")
 
     def predict(self, input=None):
         if len(input.shape) < 3:
             input = input[np.newaxis, :, :]
-        return np.argmax(self.model.predict(input))
+        outputs = self.model.predict(input)
+        return np.argmax(outputs)
+
+    def predict_from_tf(self, input, session=None):
+        if len(input.shape) < 3:
+            input = input[np.newaxis, :, :]
+
+        return np.argmax(session.run([self.output_tf], {self.input_tf: input}))
 
     def evaluate_sensor_model(self, model, args):
         if self.dataset is None:
@@ -103,6 +113,7 @@ class SensorAgent(object):
         model.add(keras.layers.Dense(output_shape, activation='softmax'))
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         return model
+
 
 
 if __name__ == "__main__":

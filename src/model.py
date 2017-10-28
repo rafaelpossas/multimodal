@@ -54,19 +54,10 @@ class LSTMPolicy(object):
     def __init__(self, ob_space, ac_space):
         self.x = x = tf.placeholder(tf.float32, [None] + list(ob_space))
 
-        conv = tf.layers.conv2d(x, 32, kernel_size=[3, 3], padding="SAME")
-        conv = tf.layers.max_pooling2d(conv, (2, 2), (2, 2), padding="SAME")
-        conv = tf.layers.conv2d(conv, 32, kernel_size=[3, 3], padding="SAME")
-        conv = tf.layers.max_pooling2d(conv, (2, 2), (2, 2), padding="SAME")
-        conv = tf.layers.conv2d(conv, 32, kernel_size=[3, 3], padding="SAME")
-        conv = tf.layers.max_pooling2d(conv, (2, 2), (2, 2), padding="SAME")
-        conv = tf.layers.conv2d(conv, 32, kernel_size=[3, 3], padding="SAME")
-        x = tf.layers.max_pooling2d(conv, (2, 2), (2, 2), padding="SAME")
-
         # for i in range(4):
         #     x = tf.nn.elu(conv2d(x, 32, 'l{}'.format(i + 1), [3, 3], [2, 2]))
-        # introduce a "fake" batch dimension of 1 after flatten so that we can
-        # do LSTM over time dim
+        # # introduce a "fake" batch dimension of 1 after flatten so that we can
+        # # do LSTM over time dim
         x = tf.expand_dims(flatten(x), [0])
 
         size = 256
@@ -82,24 +73,27 @@ class LSTMPolicy(object):
         self.state_in = [c_in, h_in]
 
         state_in = rnn.LSTMStateTuple(c_in, h_in)
-        lstm_outputs, lstm_state = tf.nn.dynamic_rnn(
-            lstm, x, initial_state=state_in, sequence_length=step_size,
-            time_major=False)
+        lstm_outputs, lstm_state = tf.nn.dynamic_rnn(lstm, x, initial_state=state_in, sequence_length=step_size,
+                                                     time_major=False)
         lstm_c, lstm_h = lstm_state
         x = tf.reshape(lstm_outputs, [-1, size])
-        self.logits = linear(x, ac_space, 'action',normalized_columns_initializer(0.01))
-        self.vf = tf.reshape(linear(x, 1, 'value',normalized_columns_initializer(1.0)), [-1])
+
+        self.logits = linear(x, ac_space, 'action', normalized_columns_initializer(0.01))
+        #self.logits = tf.contrib.layers.fully_connected(x, ac_space, activation_fn=None)
+        self.vf = tf.reshape(linear(x, 1, 'value', normalized_columns_initializer(1.0)), [-1])
+        #self.vf = tf.reshape(tf.contrib.layers.fully_connected(x, 1, activation_fn=None), [-1])
         self.state_out = [lstm_c[:1, :], lstm_h[:1, :]]
         self.sample = categorical_sample(self.logits, ac_space)[0, :]
         self.var_list = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,
                                           tf.get_variable_scope().name)
+        self.softmax = tf.nn.softmax(self.logits)
 
     def get_initial_features(self):
         return self.state_init
 
     def act(self, ob, c, h):
         sess = tf.get_default_session()
-        return sess.run([self.sample, self.vf] + self.state_out,
+        return sess.run([self.sample,self.softmax, self.vf] + self.state_out,
                         {self.x: [ob], self.state_in[0]: c,
                          self.state_in[1]: h})
 

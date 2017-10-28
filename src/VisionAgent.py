@@ -39,22 +39,47 @@ class VisionAgent(object):
         'act19': (18, 'sit-ups'), 'act20': (19, 'cycling')
     }
 
-    def __init__(self, weights=None, architecture="mobilenet", num_classes=20, fc_size=512, dropout=0.6):
+    def __init__(self, weights=None, architecture="mobilenet", num_classes=20,
+                 fc_size=512, dropout=0.6, tf_input=None, tf_output=None):
 
         if weights is not None:
             _, self.model = self.get_fbf_model(architecture=architecture,
                                                num_classes=num_classes, fc_size=fc_size, dropout=dropout)
             self.model.load_weights(weights)
-            self.model.save("vision_model_full.hdf5")
+            #self.model.save("vision_model_full.hdf5")
+        self.input_tf, self.output_tf = tf_input, tf_output
 
-    def predict(self, x, num_samples=10):
+    def predict(self, x):
         if self.model is not None:
+            if len(x.shape) < 4:
+                x = x[np.newaxis]
+            num_samples = x.shape[0]
             pred = self.model.predict(x)
             pred = np.argmax(pred, axis=1)
             pred = pred.reshape((int(pred.shape[0] / num_samples), num_samples, 1))
             return [mode(arr.flatten())[0][0] for arr in pred][0]
         else:
             raise Exception("The CNN model needs to be provided")
+
+    def predict_from_tf(self, input, session=None):
+        if len(input.shape) < 3:
+            input = input[np.newaxis, :, :]
+
+        if session is None:
+            session = tf.Session()
+
+        num_samples = input.shape[0]
+        pred = []
+
+        for img_x in input:
+            if len(img_x.shape) < 4:
+                img_x = img_x[np.newaxis]
+            pred.append(session.run([self.output_tf], {self.input_tf: img_x}))
+
+        pred = np.argmax(np.array(np.squeeze(pred)), axis=1)
+        pred = pred.reshape((int(pred.shape[0] / num_samples), num_samples, 1))
+
+        return [mode(arr.flatten())[0][0] for arr in pred][0]
 
     def intermediate_lrcn_model(self, args):
         _, model = self.get_fbf_model(args)
@@ -282,7 +307,7 @@ if __name__ == "__main__":
     a.add_argument('--fine_tune_lr', default=0.00006, type=float)
     a.add_argument("--fine_tuned_weights", default="")
     a.add_argument("--fbf_model_weights", default="")
-    a.add_argument("--pre_trained_model", default="imagenet")
+    a.add_argument("--pre_trained_model", default=None)
     a.add_argument("--batch_size", default=150, type=int)
     a.add_argument("--plot", action="store_true")
     a.add_argument("--dropout", default=0.8, type=float)

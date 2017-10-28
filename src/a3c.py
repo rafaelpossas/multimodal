@@ -3,12 +3,8 @@ from collections import namedtuple
 import numpy as np
 import tensorflow as tf
 from model import LSTMPolicy
-import six.moves.queue as queue
 import scipy.signal
-import threading
-import distutils.version
-
-
+from tensorflow.python.platform import gfile
 def discount(x, gamma):
     return scipy.signal.lfilter([1], [1, -gamma], x[::-1], axis=0)[::-1]
 
@@ -64,9 +60,8 @@ def env_runner(env, policy, num_local_steps, summary_writer, render):
     """
     last_state = env.reset()
     last_features = policy.get_initial_features()
-    timestep_limit = env.spec.tags.get(
-            'wrapper_config.TimeLimit.max_episode_steps')
-    semantics_autoreset = env.metadata.get('semantics.autoreset')
+    timestep_limit = 10000
+    #semantics_autoreset = env.metadata.get('semantics.autoreset')
     length = 0
     rewards = 0
     running_mean = None
@@ -75,12 +70,14 @@ def env_runner(env, policy, num_local_steps, summary_writer, render):
     while True:
         terminal_end = False
         rollout = PartialRollout()
-
         for _ in range(num_local_steps):
             fetched = policy.act(last_state, *last_features)
-            action, value_, features = fetched[0], fetched[1], fetched[2:]
+            action, softmax, value_, features = fetched[0], fetched[1], fetched[2], fetched[3:]
             # argmax to convert from one-hot
-            state, reward, terminal, info = env.step(action.argmax())
+
+            state, reward, terminal = env.step(action.argmax(),
+                                               session=tf.get_default_session(),episode=episode,
+                                               summary_writer=summary_writer, action_probs=np.squeeze(softmax))
             if render:
                 env.render()
 
@@ -93,21 +90,21 @@ def env_runner(env, policy, num_local_steps, summary_writer, render):
             last_state = state
             last_features = features
 
-            if info:
-                summary = tf.Summary()
-                for k, v in info.items():
-                    summary.value.add(tag=k, simple_value=float(v))
-                summary_writer.add_summary(summary, policy.global_step.eval())
-                summary_writer.flush()
+            # if info:
+            #     summary = tf.Summary()
+            #     for k, v in info.items():
+            #         summary.value.add(tag=k, simple_value=float(v))
+            #     summary_writer.add_summary(summary, policy.global_step.eval())
+            #     summary_writer.flush()
 
             if terminal or length >= timestep_limit:
                 running_mean = rewards if running_mean is None else 0.99 * running_mean + 0.01 * rewards
                 summary = tf.Summary()
                 terminal_end = True
-                if length >= timestep_limit or not semantics_autoreset:
+                if length >= timestep_limit:
                     last_state = env.reset()
                 last_features = policy.get_initial_features()
-                print("Episode {} finished. Sum of rewards: {} Length: {} Running Mean {:.3f}".format(episode, rewards, length, running_mean))
+                print("Ep. {} finished. Sum of rewards: {} Length: {} Running mean {}".format(episode, rewards, length, running_mean))
                 summary.value.add(tag="running_mean", simple_value=float(running_mean))
                 summary_writer.add_summary(summary, episode)
                 summary_writer.flush()
@@ -122,6 +119,7 @@ def env_runner(env, policy, num_local_steps, summary_writer, render):
         # once we have enough experience, yield it, and have the ThreadRunner place it on a queue
         yield rollout
 
+
 class A3C(object):
     def __init__(self, env, task, visualise):
         """
@@ -135,13 +133,13 @@ class A3C(object):
         self.env = env
         self.task = task
         self.visualise = visualise
-        obs_shape = env.observation_space.shape
+        obs_shape = env.observation_shape
         worker_device = '/job:worker/task:{}/cpu:0'.format(task)
         with tf.device(tf.train.replica_device_setter(1,
                 worker_device=worker_device)):
             with tf.variable_scope('global'):
                 self.network = LSTMPolicy(obs_shape,
-                                          env.action_space.n)
+                                          env.action_space)
                 self.global_step = tf.get_variable('global_step', [], tf.int32,
                         initializer=tf.constant_initializer(0, dtype=tf.int32),
                         trainable=False)
@@ -149,12 +147,28 @@ class A3C(object):
         with tf.device(worker_device):
             with tf.variable_scope("local"):
                 self.local_network = pi = LSTMPolicy(obs_shape,
-                                                     env.action_space.n)
+                                                     env.action_space)
                 pi.global_step = self.global_step
 
-            self.ac = tf.placeholder(tf.float32, [None, env.action_space.n], name="ac")
+            self.ac = tf.placeholder(tf.float32, [None, env.action_space],
+                                     name="ac")
             self.adv = tf.placeholder(tf.float32, [None], name="adv")
             self.r = tf.placeholder(tf.float32, [None], name="r")
+
+            with gfile.FastGFile('models/tensorflow_model/sensor_model.pb', 'rb') as f:
+                graph_def = tf.GraphDef()
+                graph_def.ParseFromString(f.read())
+                self.input_sns, self.output_sns = tf.import_graph_def(graph_def, return_elements=['lstm_1_input:0', 'output_node0:0'])
+
+            with gfile.FastGFile('models/tensorflow_model/vision_model.pb', 'rb') as f:
+                graph_def = tf.GraphDef()
+                graph_def.ParseFromString(f.read())
+                self.input_img, self.output_img = tf.import_graph_def(graph_def, return_elements=['input_1:0', 'output_node0:0'])
+
+            env.sensor_agent.input_tf = self.input_sns
+            env.sensor_agent.output_tf = self.output_sns
+            env.vision_agent.input_tf = self.input_img
+            env.vision_agent.output_tf = self.output_img
 
             log_prob_tf = tf.nn.log_softmax(pi.logits)
             prob_tf = tf.nn.softmax(pi.logits)
@@ -163,7 +177,7 @@ class A3C(object):
             # policy gradient notice that self.ac is a placeholder that is
             # provided externally. adv will contain the advantages, as
             # calculated in process_rollout
-            self.pi_loss = - tf.reduce_sum(tf.reduce_sum(log_prob_tf * self.ac, [1])
+            pi_loss = - tf.reduce_sum(tf.reduce_sum(log_prob_tf * self.ac, [1])
                                       * self.adv)
 
             # loss of value function
@@ -171,16 +185,16 @@ class A3C(object):
             entropy = - tf.reduce_sum(prob_tf * log_prob_tf)
 
             bs = tf.to_float(tf.shape(pi.x)[0])
-            self.loss = self.pi_loss + 0.5 * vf_loss - entropy * 0.01
+            self.loss = pi_loss + 0.5 * vf_loss - entropy * 0.01
 
             grads = tf.gradients(self.loss, pi.var_list)
 
-            tf.summary.scalar("model/policy_loss", self.pi_loss)
+            tf.summary.scalar("model/policy_loss", pi_loss / bs)
             tf.summary.scalar("model/value_loss", vf_loss / bs)
             tf.summary.scalar("model/entropy", entropy / bs)
-            tf.summary.image("model/state", pi.x)
             tf.summary.scalar("model/grad_global_norm", tf.global_norm(grads))
-            tf.summary.scalar("model/var_global_norm", tf.global_norm(pi.var_list))
+            tf.summary.scalar("model/var_global_norm",
+                              tf.global_norm(pi.var_list))
             self.summary_op = tf.summary.merge_all()
 
             grads, _ = tf.clip_by_global_norm(grads, 40.0)
@@ -199,12 +213,11 @@ class A3C(object):
             self.summary_writer = None
             self.local_steps = 0
 
-
     def start(self, sess, summary_writer):
         self.summary_writer = summary_writer
         self.rollout_provider = env_runner(self.env,
                                            self.local_network,
-                                           20, #TODO: Move to args
+                                           5, #TODO: Move to args
                                            self.summary_writer,
                                            self.visualise)
 
@@ -219,7 +232,7 @@ class A3C(object):
         rollout = next(self.rollout_provider)
         batch = process_rollout(rollout, gamma=0.99, lambda_=1.0)
 
-        should_compute_summary = self.local_steps % 11 == 0
+        should_compute_summary = self.task == 0 and self.local_steps % 11 == 0
 
         if should_compute_summary:
             fetches = [self.summary_op, self.train_op, self.global_step]

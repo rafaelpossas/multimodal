@@ -9,9 +9,8 @@ from VisionAgent import VisionAgent
 import h5py
 import logging
 import datetime
-import sys
+import os
 import argparse
-from MultimodalDataset import MultimodalDataset
 
 class LinearDecayEpsilonGreedy():
     """Epsilon-greedy with linearyly decayed epsilon
@@ -72,8 +71,6 @@ class PGAgent:
         self.gradients = []
         self.rewards = []
         self.probs = []
-        self.steps = []
-        self.true_preds = []
         self.model = self._build_model()
         self.model.summary()
         self.epsilon_greedy = LinearDecayEpsilonGreedy(1, 0.05, 100)
@@ -100,17 +97,13 @@ class PGAgent:
         self.states.append(state)
         self.rewards.append(reward)
 
-    def act(self, state, stochastic=True, t=0):
+    def act(self, state, stochastic=True):
         state = state[np.newaxis, :, :]
         aprob = self.model.predict(state, batch_size=1).flatten()
         self.probs.append(aprob)
         prob = aprob / np.sum(aprob)
         if stochastic is True:
             #action = self.epsilon_greedy.select_action(t, prob)
-
-            if t < 100:
-                prob = [0.5, 0.5]
-
             action = np.random.choice(self.action_size, 1, p=prob)[0]
             # action = np.argmax(prob)
             # epsilon_greedy = [0.9 if ix == action else 0.1 for ix in range(0, 2)]
@@ -120,7 +113,7 @@ class PGAgent:
         return action, prob
 
     def discount_rewards(self, rewards):
-        discounted_rewards = np.zeros_like(rewards)
+        discounted_rewards = np.zeros_like(rewards).astype(float)
         running_add = 0
         for t in reversed(range(0, rewards.size)):
             # if rewards[t] != 0:
@@ -132,7 +125,6 @@ class PGAgent:
     def train(self):
         gradients = np.vstack(self.gradients)
         rewards = np.vstack(self.rewards).astype(np.float)
-        #rewards = self.discount_rewards(rewards)
         #standardize the rewards to be unit normal (helps control the gradient estimator variance
         rewards_mean = np.mean(rewards)
         rewards_std = np.std(rewards)
@@ -152,7 +144,7 @@ class PGAgent:
             self.model.train_on_batch(x, y)
 
         self.model.reset_states()
-        self.states, self.probs, self.gradients, self.rewards,self.steps, self.true_preds = [], [], [], [], [], []
+        self.states, self.probs, self.gradients, self.rewards = [], [], [], []
 
     def load(self, name):
         self.model.load_weights(name)
@@ -190,26 +182,24 @@ def train_policy(alpha, num_episodes=2000):
     sensor_agent = SensorAgent(weights="models/sensor_model.hdf5")
     vision_agent = VisionAgent(weights="models/vision_model.hdf5")
 
-    env = ActivityEnvironment(sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=alpha)
+
     current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     # create a file handler
-    handler = logging.FileHandler(str(alpha)+'_train_policy_'+current_time+'.log')
+    path = os.path.join('training_stats', 'alpha_'+str(alpha), current_time, 'logs')
+    os.makedirs(path, exist_ok=True)
+    logfile = os.path.join(path, 'train_policy_'+current_time+'.log')
+    handler = logging.FileHandler(logfile)
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+    env = ActivityEnvironment(sensor_agent=sensor_agent, vision_agent=vision_agent,
+                              alpha=alpha, logger=logger, time=current_time)
     load_weights = False
-    all_scores = []
-    all_rewards = []
-    all_true_preds = []
-    all_action_avg = []
-    moving_average = []
-    score_mean = 0
-    acc_mean = 0
-    all_acc = []
+
     score = 0
     episode = 0
     state = env.reset()
@@ -218,68 +208,33 @@ def train_policy(alpha, num_episodes=2000):
     action_size = 2
 
     agent = PGAgent(state_size, action_size)
+
     if load_weights:
         agent.model.load_weights('activity.h5')
         all_scores = h5py.File('scores.hdf5')['scores'][:].tolist()
         logger.info('Last Average score: %.2f' % (sum(all_scores) / float(len(all_scores))))
+
     while episode < num_episodes:
-        action, prob = agent.act(state, t=episode)
-        agent.steps.append(action)
-        state, reward, done, is_true_pred = env.step(action, verbose=False)
-        agent.true_preds.append(is_true_pred)
+        action, prob = agent.act(state)
+        state, reward, done = env.step(action, verbose=False, action_probs=prob, episode=episode)
         score += reward
         agent.remember(state, action, prob, reward)
 
         if done:
             episode += 1
-
-            all_scores.append(score)
-
-            sensor_steps = np.where(np.array(agent.steps) == 0)[0]
-            vision_steps = np.where(np.array(agent.steps) == 1)[0]
-
-            all_rewards.append([np.array(agent.rewards)[sensor_steps].sum(),
-                                np.array(agent.rewards)[vision_steps].sum()])
-            all_true_preds.append([np.array(agent.true_preds).sum(), len(agent.true_preds)])
-
-            score_mean = np.average(all_scores)
-            all_action_avg.append(np.average(agent.probs, axis=0))
-            action_avg = np.average(all_action_avg, axis=0)
-
-            acc = np.array(agent.true_preds).sum() / float(len(agent.true_preds))
-            all_acc.append(acc)
-            acc_mean = np.average(all_acc)
-
-            moving_average.append([score_mean, acc_mean])
-
-            logger.info('Episode: %d - Reward: %.2f - Avg Score: %.2f - Avg Accuracy: %.2f'
-                        % (episode, score, score_mean, acc_mean))
-            logger.info('Number of steps - Sensor: %d, Vision: %d'
-                        % (len(sensor_steps), len(vision_steps)))
-            logger.info('Action probability average - Sensor: %.2f Vision %.2f' % (action_avg[0], action_avg[1]))
-
+            agent.rewards = agent.discount_rewards(np.array(agent.rewards))
             agent.train()
-
             score = 0
             state = env.reset()
+
             if episode > 1 and episode % 20 == 0:
+                path = os.path.join('training_stats', 'alpha_' + str(alpha), current_time)
+                file = os.path.join(path, 'lstm_policy'+'.h5')
+                agent.save(file)
 
-                # if episode == 20:
-                #     acc = evaluate_policy(agent_weights=None)
-                # else:
-                #     acc = evaluate_policy()
-
-                agent.save(str(alpha)+'_activity_'+current_time+'.h5')
-
-                with h5py.File(str(alpha)+'_stats_'+current_time+'.hdf5', "w") as hf:
-                    hf.create_dataset("scores", data=all_scores)
-                    hf.create_dataset("moving_average", data=moving_average)
-                    hf.create_dataset('batch_acc', data=all_acc)
-                    hf.create_dataset("action_avg", data=all_action_avg)
-                    hf.create_dataset("rewards", data=np.array(all_rewards))
-                    hf.create_dataset("true_preds", data=all_true_preds)
 
     logger.removeHandler(handler)
+
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
