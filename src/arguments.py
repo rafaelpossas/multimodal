@@ -27,5 +27,6 @@ parser.add_argument('-v', '--verbose', action='count', dest='verbosity',
                     default=0, help='Set verbosity.')
 parser.add_argument('--task', default=0, type=int, help='Task index')
 parser.add_argument('--job-name', default="worker", help='worker or ps')
-
+parser.add_argument('--alpha', default=0, help="alpha reward for camera")
+parser.add_argument('--tbport', default=12345, help="Port that tensorboard runs")
 args = parser.parse_args()

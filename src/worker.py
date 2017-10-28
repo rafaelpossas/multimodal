@@ -27,7 +27,7 @@ def run(args, server):
     vision_agent = VisionAgent()
     current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
     env = ActivityEnvironment(img_root="multimodal_dataset/video/images/", sns_root="multimodal_dataset/sensor/",
-                              sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=0.35, env_id=args.task,
+                              sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=args.alpha, env_id=args.task,
                               time=current_time)
 
     trainer = A3C(env, args.task, args.visualise)
