@@ -197,6 +197,7 @@ class ActivityEnvironment(object):
             acc_mean = np.average(self.all_acc)
 
             self.moving_average.append([score_mean, acc_mean])
+
             if self.logger is not None:
                 self.logger.info('Episode: %d - Reward: %.2f - Avg Score: %.2f - Avg Accuracy: %.2f'
                             % (episode, score, score_mean, acc_mean))
@@ -206,6 +207,15 @@ class ActivityEnvironment(object):
                                np.mean(self.all_rewards, axis=0)[0], np.mean(self.all_rewards, axis=0)[1]))
 
                 self.logger.info('Action probability average - Sensor: %.2f Vision %.2f' % (action_avg[0], action_avg[1]))
+
+            print('Episode: %d - Reward: %.2f - Avg Score: %.2f - Avg Accuracy: %.2f'
+                        % (episode, score, score_mean, acc_mean))
+
+            print('Number of steps - Sensor: %d, Vision: %d - Avg rewards - Sensor: %.2f, Vision %.2f'
+                        % (len(sensor_steps), len(vision_steps),
+                           np.mean(self.all_rewards, axis=0)[0], np.mean(self.all_rewards, axis=0)[1]))
+
+            print('Action probability average - Sensor: %.2f Vision %.2f' % (action_avg[0], action_avg[1]))
 
             if summary_writer is not None:
                 summary = tf.Summary()
@@ -222,7 +232,7 @@ class ActivityEnvironment(object):
             self.ep_probs = []
             self.ep_true_preds = []
 
-            if episode > 1 and episode % 5 == 0:
+            if episode > 0 and episode % 1 == 0:
                 path = os.path.join('training_stats', 'alpha_'+str(self.alpha), self.current_time)
                 os.makedirs(path, exist_ok=True)
                 with h5py.File(os.path.join(path, self.env_id+'_stats_'+self.current_time+'.hdf5'), "w") as hf:

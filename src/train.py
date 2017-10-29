@@ -21,7 +21,8 @@ def create_commands(session, num_workers, remotes, env_id, logdir, shell='bash',
         sys.executable, 'worker.py',
         '--log-dir', logdir,
         '--env-id', env_id,
-        '--num-workers', str(num_workers)]
+        '--num-workers', str(num_workers),
+        '--alpha', args.alpha]
 
     if visualise:
         base_cmd += ['--visualise']
