@@ -21,7 +21,9 @@ def create_commands(session, num_workers, remotes, logdir, shell='bash', mode='t
         sys.executable, 'worker.py',
         '--log-dir', logdir,
         '--num-workers', str(num_workers),
-        '--alpha', args.alpha]
+        '--alpha', args.alpha,
+        '--sensorpb', args.sensorpb,
+        '--visionpb', args.visionpb]
 
     if visualise:
         base_cmd += ['--visualise']
