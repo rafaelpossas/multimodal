@@ -11,6 +11,9 @@ parser.add_argument('--sensorpb', default='models/production/tb_models/sensor_mo
 parser.add_argument('--visionpb', default='models/production/tb_models/vision_model.pb', type=str,
                     help='Protobuff File for the Vision Network')
 
+parser.add_argument('--dataset', default='multimodal_dataset/video/splits/train', type=str,
+                    help='Protobuff File for the Sensor Network')
+
 parser.add_argument('-l', '--log-dir', type=str, default='/tmp/pong',
                     help='Log directory path')
 parser.add_argument('-n', '--dry-run', action='store_true',

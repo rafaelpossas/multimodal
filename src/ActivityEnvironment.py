@@ -35,14 +35,12 @@ class ActivityEnvironment(object):
 
     def __init__(self, sensor_agent = None, vision_agent=None,
                  img_chunk_size=10, sns_chunk_size=10,
-                 img_root="multimodal_dataset/video/images/",
-                 sns_root="multimodal_dataset/sensor/",
+                 dataset="multimodal_dataset/video/splits/train/",
                  sensors=['accx', 'accy', 'accz', 'gyrx','gyry','gyrz'],
                  img_max_samples=150, sns_max_samples=150,
                  alpha=0, logger=None, time=None, env_id=0):
 
-        self.img_root = img_root
-        self.sns_root = sns_root
+        self.dataset = dataset
         self.sensors = sensors
         self.img_max_samples = img_max_samples
         self.sns_max_samples = sns_max_samples
@@ -261,7 +259,7 @@ class ActivityEnvironment(object):
     def _episode_generator(self):
         self.datasets_full_sweeps = 0
         while True:
-            all_dirs = glob(os.path.join(self.img_root, '*', '*'))
+            all_dirs = glob(os.path.join(self.dataset, '*', '*'))
             np.random.shuffle(all_dirs)
 
             for act_seq in all_dirs:
@@ -270,10 +268,10 @@ class ActivityEnvironment(object):
                 sequence = source_split_arr[-1]
                 activity = source_split_arr[-2]
                 activity_number = activity_dict()[activity][0]
-                sns_file = os.path.join(self.sns_root, activity+sequence+".csv")
-                sns_x = np.squeeze(MultimodalDataset.load_sensor_from_file(sns_file, self.sensors))[:self.sns_max_samples]
+                sns_file = os.path.join(act_seq, "sns.npy")
+                sns_x = np.load(sns_file)
 
-                all_img = glob(os.path.join(act_seq, '*.jpg'))
+                all_img = sorted(glob(os.path.join(act_seq, '*.jpg')))
 
                 for ix, img_file in enumerate(all_img):
                     if ix < self.img_max_samples:

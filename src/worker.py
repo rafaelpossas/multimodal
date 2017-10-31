@@ -26,7 +26,7 @@ def run(args, server):
     sensor_agent = SensorAgent()
     vision_agent = VisionAgent()
     current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
-    env = ActivityEnvironment(img_root="multimodal_dataset/video/images/", sns_root="multimodal_dataset/sensor/",
+    env = ActivityEnvironment(dataset=args.dataset,
                               sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=args.alpha, env_id=args.task,
                               time=current_time)
 
