@@ -110,7 +110,7 @@ class MultimodalDataset(object):
 
         while True:
             all_grouped_img, all_grouped_sns = MultimodalDataset.get_all_files(root, group_size, max_frames_per_video)
-
+            #print("Going through the entire batch on {}".format(root))
             if shuffle_arrays:
                 arr_ix = np.arange(len(all_grouped_img))
                 np.random.shuffle(arr_ix)
@@ -121,41 +121,38 @@ class MultimodalDataset(object):
 
             for img_ix, img in enumerate(all_grouped_img):
                 cur_img_batch = []
-                if img_ix < max_frames_per_video:
-                    sns = None
+                sns = None
+                if len(all_grouped_sns) > 0:
+                    sns = all_grouped_sns[img_ix]
 
-                    if len(all_grouped_sns) > 0:
-                        sns = all_grouped_sns[img_ix]
+                if not isinstance(img, np.ndarray):
+                    img = [img]
 
-                    if not isinstance(img, np.ndarray):
-                        img = [img]
+                activity = img[0].split(os.path.sep)[-3]
 
-                    activity = img[0].split(os.path.sep)[-3]
+                if type != "sns":
+                    for img_file in img:
+                        cur_img = MultimodalDataset.get_img_from_file(img_file, resize_shape, img_shape)
+                        cur_img_batch.append(cur_img)
 
-                    if type != "sns":
-                        for img_file in img:
-                            cur_img = MultimodalDataset.get_img_from_file(img_file, resize_shape, img_shape)
-                            cur_img_batch.append(cur_img)
+                    img_x.append(np.squeeze(cur_img_batch))
 
-                        img_x.append(np.squeeze(cur_img_batch))
+                if sns is not None:
+                    sns_x.append(sns)
 
-                    if sns is not None:
-                        sns_x.append(sns)
+                y.append(activity_dict()[activity][0])
 
-                    y.append(activity_dict()[activity][0])
+                if len(img_x) == batch_size or len(sns_x) == batch_size:
+                    #print(img)
 
-                    if len(img_x) == batch_size or len(sns_x) == batch_size:
-                        #print(img)
+                    if type == "img":
+                        yield np.array(img_x), np.eye(20)[np.array(y).astype(int)]
+                        #print("\n{} - Returning batch size of {}".format(img_ix, batch_size))
 
-                        if type == "img":
-                            yield np.array(img_x), np.eye(20)[np.array(y).astype(int)]
-
-                        if type == "sns":
-                            if len(sns_x) < batch_size:
-                                print("Empty Sensor Bath")
-                            yield np.array(sns_x), np.eye(20)[np.array(y).astype(int)]
-
-                        img_x,sns_x, y = ([],[], [])
+                    if type == "sns":
+                        yield np.array(sns_x), np.eye(20)[np.array(y).astype(int)]
+                        #print("\n{} - Returning batch size of {}".format(img_ix, batch_size))
+                    img_x,sns_x, y = ([],[], [])
 
     def load_sensor_dataset(self, train_size=0.8, split_train=True,
                   group_size=50, step_size=0, selected_sensors=[], root_dir=None):
@@ -263,9 +260,10 @@ class MultimodalDataset(object):
             list_y.append([activity_dict()[activity][0]])
 
         return np.array(list_x), np.array(list_y)
+
     @staticmethod
-    def split_windows(group_size, step_size, X, y):
-        number_groups = int(((X.shape[1]-group_size)/step_size)+1)
+    def split_windows(group_size, step_size, X, y, row_idx=0):
+        number_groups = int(((X.shape[row_idx]-group_size)/step_size)+1)
         split_xy = [(X[j, i:i + group_size], y[j])
                     for j in range(len(X)) for i in range(0, number_groups * step_size, step_size)]
         split_x = np.array([x[0] for x in split_xy])

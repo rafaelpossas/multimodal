@@ -9,6 +9,7 @@ import keras.backend as K
 
 from MultimodalDataset import MultimodalDataset
 from VuzixDataset import VuzixDataset
+from keras.utils.training_utils import multi_gpu_model
 
 import argparse
 import sys
@@ -26,6 +27,8 @@ class VisionAgent(object):
     IM_WIDTH = 224
     IM_HEIGHT = 224
     NUM_CHANNELS = 3
+    NUM_EPOCHS = 0
+    INIT_LR = 5e-3
 
     activity_dict = {
         'act01': (0, 'walking'), 'act02': (1, 'walking upstairs'), 'act03': (2, 'walking downstairs'),
@@ -168,7 +171,8 @@ class VisionAgent(object):
         else:
             for layer in base_model.layers[:-2]:
                 layer.trainable = False
-        model.compile(optimizer='adadelta', loss='categorical_crossentropy', metrics=['accuracy'])
+        opt = SGD(lr=self.INIT_LR, momentum=0.9)
+        model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
     def setup_to_finetune(self, model, fine_tune_lr=0.0001):
         """Freeze the bottom NB_IV3_LAYERS and retrain the remaining top layers.
@@ -190,7 +194,9 @@ class VisionAgent(object):
         x = Dense(fc_size, activation='relu')(x)
         x = Dropout(dropout)(x)
         predictions = Dense(nb_classes, activation='softmax')(x)  # new softmax layer
-        model = Model(inputs=base_model.input, outputs=predictions)
+
+        with tf.device("/cpu:0"):
+            model = Model(inputs=base_model.input, outputs=predictions)
 
         return model
 
@@ -218,30 +224,61 @@ class VisionAgent(object):
 
         return base_model, model
 
+
+
     def train_fbf(self, args):
+
+
+        def poly_decay(epoch):
+            # initialize the maximum number of epochs, base learning rate,
+            # and power of the polynomial
+            maxEpochs = self.NUM_EPOCHS
+            baseLR = self.INIT_LR
+            power = 1.0
+
+            # compute the new learning rate based on polynomial decay
+            alpha = baseLR * (1 - (epoch / float(maxEpochs))) ** power
+
+            # return the new learning rate
+            return alpha
+
+        if args.dataset == 'vuzix':
+            max_frames_per_video = 4500
+            flow_from_dir = VuzixDataset.flow_from_dir
+        else:
+            max_frames_per_video = 150
+            flow_from_dir = MultimodalDataset.flow_from_dir
+
         """Use transfer learning and fine-tuning to train a network on a new dataset"""
-        nb_train_samples = MultimodalDataset.get_total_size(args.train_dir)
-        nb_val_samples = MultimodalDataset.get_total_size(args.val_dir)
+        all_val_samples, _ = MultimodalDataset.get_all_files(args.val_dir, 1,
+                                                             max_frames_per_video)
+        nb_val_samples = len(all_val_samples)
+
+        all_train_samples, _ = MultimodalDataset.get_all_files(args.train_dir, 1,
+                                                               max_frames_per_video)
+        nb_train_samples = len(all_train_samples)
         nb_epoch_fine_tune = int(args.nb_epoch_fine_tune)
         nb_epoch_transferlearn = int(args.nb_epoch_transfer_learn)
         batch_size = int(args.batch_size)
 
-        if args.dataset == 'vuzix':
-            flow_from_dir = VuzixDataset.flow_from_dir
-        else:
-            flow_from_dir = MultimodalDataset.flow_from_dir
+
 
         # setup model
         base_model, model = self.get_fbf_model(args.architecture, args.num_classes, args.fc_size, args.dropout,
                                                args.pre_trained_model)
         # fine-tuning
+        if args.gpus > 1:
+            model = multi_gpu_model(model, gpus=args.gpus)
 
         self.setup_to_transfer_learn(model, base_model)
         checkpointer = ModelCheckpoint(
-            filepath='models/vision/finetune_' + args.architecture + '_{acc:2f}-{val_acc:.2f}.hdf5',
+            filepath='models/vision/'+args.dataset+'_finetune_' + args.architecture + '_{acc:2f}-{val_acc:.2f}.hdf5',
             verbose=0,
             monitor='val_acc',
             save_best_only=True)
+
+        self.NUM_EPOCHS = nb_epoch_transferlearn
+        lr_decay = LearningRateScheduler(poly_decay)
 
         if args.fine_tuned_weights == "" and args.fbf_model_weights == "":
 
@@ -251,7 +288,7 @@ class VisionAgent(object):
                 epochs=nb_epoch_transferlearn,
                 validation_data=flow_from_dir(root=args.val_dir, max_frames_per_video=150, batch_size=args.batch_size),
                 validation_steps=math.ceil(nb_val_samples / batch_size),
-                callbacks=[checkpointer])
+                callbacks=[checkpointer, lr_decay])
             # transfer learning
 
         else:
@@ -263,10 +300,16 @@ class VisionAgent(object):
         self.setup_to_finetune(model, args.fine_tune_lr)
 
         checkpointer = ModelCheckpoint(
-            filepath='models/vision/' + args.architecture + '.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
+            filepath='models/vision/' + args.dataset+ "_" + args.architecture
+                     + '.{epoch:03d}-{acc:2f}-{val_acc:.2f}.hdf5',
             verbose=1,
             monitor='val_acc',
             save_best_only=True)
+
+        self.INIT_LR = args.fine_tune_lr
+        self.NUM_EPOCHS = nb_epoch_fine_tune
+
+        lr_decay = LearningRateScheduler(poly_decay)
 
         history_tl = model.fit_generator(
             flow_from_dir(args.train_dir, max_frames_per_video=150, batch_size=batch_size),
@@ -275,11 +318,45 @@ class VisionAgent(object):
             validation_data=flow_from_dir(args.val_dir, max_frames_per_video=150, batch_size=batch_size),
             validation_steps=math.ceil(nb_val_samples / batch_size),
             class_weight='auto',
-            callbacks=[checkpointer])
+            callbacks=[checkpointer, lr_decay])
 
         if args.plot:
             self.plot_training(history_tl)
 
+    def evaluate(self, args):
+
+        if args.dataset == 'vuzix':
+            max_frames_per_video = 4500
+            flow_from_dir = VuzixDataset.flow_from_dir
+        else:
+            max_frames_per_video = 150
+            flow_from_dir = MultimodalDataset.flow_from_dir
+
+        model = load_model(args.pre_trained_model)
+
+        all_val_samples, _ = MultimodalDataset.get_all_files(args.val_dir, 1,
+                                                             max_frames_per_video)
+        nb_val_samples = len(all_val_samples)
+
+        all_train_samples, _ = MultimodalDataset.get_all_files(args.train_dir, 1,
+                                                               max_frames_per_video)
+        nb_train_samples = len(all_train_samples)
+
+        print("Evaluating on Test Set")
+        result = model.evaluate_generator(flow_from_dir(root=args.val_dir, group_size=1,
+                                                        batch_size=args.batch_size,
+                                                        max_frames_per_video=max_frames_per_video, type="img",
+                                                        shuffle_arrays=False),
+                                          steps=math.floor(nb_val_samples / args.batch_size))
+        print(result)
+
+        print("Evaluating on Train Set")
+        result = model.evaluate_generator(flow_from_dir(root=args.train_dir, group_size=1,
+                                                        batch_size=args.batch_size,
+                                                        max_frames_per_video=max_frames_per_video,
+                                                        type="img", shuffle_arrays=False),
+                                          steps=math.floor(nb_train_samples / args.batch_size))
+        print(result)
     def plot_training(self, history):
         acc = history.history['acc']
         val_acc = history.history['val_acc']
@@ -303,14 +380,14 @@ if __name__ == "__main__":
     a.add_argument("--train_dir", default='multimodal_dataset/video/splits/train')
     a.add_argument("--val_dir", default='multimodal_dataset/video/splits/test')
     a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
-    a.add_argument("--nb_epoch_transfer_learn", default=2, type=int)
-    a.add_argument('--fine_tune_lr', default=0.00006, type=float)
+    a.add_argument("--nb_epoch_transfer_learn", default=3, type=int)
+    a.add_argument('--fine_tune_lr', default=0.0001, type=float)
     a.add_argument("--fine_tuned_weights", default="")
     a.add_argument("--fbf_model_weights", default="")
     a.add_argument("--pre_trained_model", default=None)
     a.add_argument("--batch_size", default=150, type=int)
     a.add_argument("--plot", action="store_true")
-    a.add_argument("--dropout", default=0.8, type=float)
+    a.add_argument("--dropout", default=0.6, type=float)
     a.add_argument("--fc_size", default=512, type=int)
     a.add_argument("--architecture", default="mobilenet")
     a.add_argument("--dataset", default="multimodal", type=str)
@@ -319,26 +396,30 @@ if __name__ == "__main__":
     a.add_argument("--model_to_train", default="fbf", type=str)
     a.add_argument("--lstm_size", default=16, type=int)
     a.add_argument("--num_classes", default=20, type=int)
+    a.add_argument("--evaluate", action="store_true")
+    a.add_argument("--gpus", default=1, type=int)
 
     vision_agent = VisionAgent()
     args = a.parse_args()
+    if args.evaluate:
+        vision_agent.evaluate(args)
+    else:
+        if args.limit_resources:
+            config = tf.ConfigProto(intra_op_parallelism_threads=4, inter_op_parallelism_threads=4,
+                                    allow_soft_placement=True, device_count={'CPU': 1}, allow_grouth=True)
+            session = tf.Session(config=config)
+            K.set_session(session)
 
-    if args.limit_resources:
-        config = tf.ConfigProto(intra_op_parallelism_threads=4, inter_op_parallelism_threads=4,
-                                allow_soft_placement=True, device_count={'CPU': 1}, allow_grouth=True)
-        session = tf.Session(config=config)
-        K.set_session(session)
+        if args.train_dir is None or args.val_dir is None:
+            a.print_help()
+            sys.exit(1)
 
-    if args.train_dir is None or args.val_dir is None:
-        a.print_help()
-        sys.exit(1)
+        if (not os.path.exists(args.train_dir)) or (not os.path.exists(args.val_dir)):
+            print("directories do not exist")
+            sys.exit(1)
 
-    if (not os.path.exists(args.train_dir)) or (not os.path.exists(args.val_dir)):
-        print("directories do not exist")
-        sys.exit(1)
+        if args.model_to_train == "fbf":
+            vision_agent.train_fbf(args)
 
-    if args.model_to_train == "fbf":
-        vision_agent.train_fbf(args)
-
-    if args.model_to_train == "lrcn":
-        vision_agent.train_lrcn(args)
+        if args.model_to_train == "lrcn":
+            vision_agent.train_lrcn(args)
