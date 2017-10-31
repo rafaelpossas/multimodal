@@ -357,22 +357,23 @@ class VisionAgent(object):
                                                         type="img", shuffle_arrays=False),
                                           steps=math.floor(nb_train_samples / args.batch_size))
         print(result)
-    def plot_training(self, history):
-        acc = history.history['acc']
-        val_acc = history.history['val_acc']
-        loss = history.history['loss']
-        val_loss = history.history['val_loss']
-        epochs = range(len(acc))
 
-        plt.plot(epochs, acc, 'r.')
-        plt.plot(epochs, val_acc, 'r')
-        plt.title('Training and validation accuracy')
-
+    def plot_training(self, H, dataset, architecture):
+        N = np.arange(0, len(H["loss"]))
+        plt.style.use("ggplot")
         plt.figure()
-        plt.plot(epochs, loss, 'r.')
-        plt.plot(epochs, val_loss, 'r-')
-        plt.title('Training and validation loss')
-        plt.show()
+        plt.plot(N, H["loss"], label="train_loss")
+        plt.plot(N, H["val_loss"], label="test_loss")
+        plt.plot(N, H["acc"], label="train_acc")
+        plt.plot(N, H["val_acc"], label="test_acc")
+        plt.title("Status for {} - {}".format(dataset, architecture))
+        plt.xlabel("Epoch #")
+        plt.ylabel("Loss/Accuracy")
+        plt.legend()
+
+        # save the figure
+        plt.savefig(dataset+"_"+architecture+'.png')
+        plt.close()
 
 
 if __name__ == "__main__":

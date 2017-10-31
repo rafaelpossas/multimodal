@@ -4,8 +4,13 @@ parser = argparse.ArgumentParser(description='Run commands')
 
 parser.add_argument('-w', '--num-workers', default=1, type=int,
                     help='Number of workers')
-parser.add_argument('-e', '--env-id', type=str, default='PongDeterministic-v4',
-                    help='Environment id')
+
+parser.add_argument('--sensorpb', default='models/production/tb_models/sensor_model.pb', type=str,
+                    help='Protobuff File for the Sensor Network')
+
+parser.add_argument('--visionpb', default='models/production/tb_models/vision_model.pb', type=str,
+                    help='Protobuff File for the Vision Network')
+
 parser.add_argument('-l', '--log-dir', type=str, default='/tmp/pong',
                     help='Log directory path')
 parser.add_argument('-n', '--dry-run', action='store_true',

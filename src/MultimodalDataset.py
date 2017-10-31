@@ -194,6 +194,7 @@ class MultimodalDataset(object):
                          sns_root="multimodal_dataset/sensor/",
                          test_percentage=0.20, imgs_per_video=150, fps=10,
                          sensors=['accx', 'accy', 'accz', 'gyrx', 'gyry', 'gyrz']):
+
         activities = glob.glob(os.path.join(img_root, "*"))
         samples_per_video = imgs_per_video * test_percentage
         for act in sorted(activities):
@@ -262,7 +263,7 @@ class MultimodalDataset(object):
         return np.array(list_x), np.array(list_y)
 
     @staticmethod
-    def split_windows(group_size, step_size, X, y, row_idx=0):
+    def split_windows(group_size, step_size, X, y, row_idx=1):
         number_groups = int(((X.shape[row_idx]-group_size)/step_size)+1)
         split_xy = [(X[j, i:i + group_size], y[j])
                     for j in range(len(X)) for i in range(0, number_groups * step_size, step_size)]

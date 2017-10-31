@@ -67,4 +67,3 @@ with tf.Session() as sess:
 agent = VisionAgent(weights='models/vision_model.hdf5', architecture="inception", tf_input=input_x, tf_output=output_x)
 print(agent.predict_from_tf(np.squeeze(sns_x)))
 print(agent.predict(np.squeeze(sns_x)))
-

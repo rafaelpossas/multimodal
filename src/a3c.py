@@ -121,7 +121,7 @@ def env_runner(env, policy, num_local_steps, summary_writer, render):
 
 
 class A3C(object):
-    def __init__(self, env, task, visualise):
+    def __init__(self, env, task, visualise, sensor_pb, vision_pb):
         """
         An implementation of the A3C algorithm that is reasonably well-tuned
         for the VNC environments. Below, we will have a modest amount of
@@ -155,12 +155,12 @@ class A3C(object):
             self.adv = tf.placeholder(tf.float32, [None], name="adv")
             self.r = tf.placeholder(tf.float32, [None], name="r")
 
-            with gfile.FastGFile('models/tensorflow_model/sensor_model.pb', 'rb') as f:
+            with gfile.FastGFile(sensor_pb, 'rb') as f:
                 graph_def = tf.GraphDef()
                 graph_def.ParseFromString(f.read())
                 self.input_sns, self.output_sns = tf.import_graph_def(graph_def, return_elements=['lstm_1_input:0', 'output_node0:0'])
 
-            with gfile.FastGFile('models/tensorflow_model/vision_model.pb', 'rb') as f:
+            with gfile.FastGFile(vision_pb, 'rb') as f:
                 graph_def = tf.GraphDef()
                 graph_def.ParseFromString(f.read())
                 self.input_img, self.output_img = tf.import_graph_def(graph_def, return_elements=['input_1:0', 'output_node0:0'])

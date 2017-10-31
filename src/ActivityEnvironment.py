@@ -253,6 +253,7 @@ class ActivityEnvironment(object):
 
             sns_x, sns_y = MultimodalDataset.split_windows(self.sns_chunk_size, self.sns_chunk_size,
                                                            sns_x[np.newaxis], sns_y)
+
             for cur_ix, (i_x, i_y, s_x, s_y) in enumerate(zip(img_x, img_y, sns_x, sns_y)):
                 done = True if cur_ix + 1 == len(img_x) else False
                 yield done, i_x, i_y, s_x, s_y

@@ -30,7 +30,7 @@ def run(args, server):
                               sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=args.alpha, env_id=args.task,
                               time=current_time)
 
-    trainer = A3C(env, args.task, args.visualise)
+    trainer = A3C(env, args.task, args.visualise, args.sensorpb, args.visionpb)
 
     # Variable names that start with 'local' are not saved in checkpoints.
     variables_to_save = [v for v in tf.global_variables()
