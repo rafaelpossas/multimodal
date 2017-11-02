@@ -73,6 +73,7 @@ def env_runner(env, policy, num_local_steps, summary_writer, render):
         for _ in range(num_local_steps):
             fetched = policy.act(last_state, *last_features)
             action, softmax, value_, features = fetched[0], fetched[1], fetched[2], fetched[3:]
+            print(softmax)
             # argmax to convert from one-hot
 
             state, reward, terminal = env.step(action.argmax(),
@@ -220,6 +221,14 @@ class A3C(object):
                                            5, #TODO: Move to args
                                            self.summary_writer,
                                            self.visualise)
+
+    def evaluate(self, env):
+        policy = self.network
+        last_state = env.reset()
+        last_features = policy.get_initial_features()
+        fetched = policy.act(last_state, *last_features)
+        action, softmax, value_, features = fetched[0], fetched[1], fetched[2], fetched[3:]
+        print(softmax)
 
     def process(self, sess):
         """

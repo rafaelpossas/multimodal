@@ -216,7 +216,8 @@ class VuzixDataset:
 
         while True:
             all_grouped_img, all_grouped_sns, labels = VuzixDataset.get_all_files(root, group_size, max_frames_per_video)
-
+            if len(all_grouped_img) == 0 and len(all_grouped_sns) == 0:
+                raise Exception("There are no data in the arrays for the generator")
             if shuffle_arrays:
                 arr_ix = np.arange(len(all_grouped_img))
                 np.random.shuffle(arr_ix)
@@ -228,39 +229,43 @@ class VuzixDataset:
 
             for img_ix, img in enumerate(all_grouped_img):
                 cur_img_batch = []
-                if img_ix < max_frames_per_video:
-                    sns = None
+                sns = None
 
-                    if len(all_grouped_sns) > 0:
-                        sns = all_grouped_sns[img_ix]
+                if len(all_grouped_sns) > 0:
+                    sns = all_grouped_sns[img_ix]
 
-                    if not isinstance(img, np.ndarray):
-                        img = [img]
+                if not isinstance(img, np.ndarray):
+                    img = [img]
 
-                    if type != "sns":
-                        for img_file in img:
-                            cur_img = MultimodalDataset.get_img_from_file(img_file, resize_shape, img_shape)
-                            cur_img_batch.append(cur_img)
+                if type != "sns":
+                    for img_file in img:
+                        cur_img = MultimodalDataset.get_img_from_file(img_file, resize_shape, img_shape)
+                        cur_img_batch.append(cur_img)
 
-                        img_x.append(np.squeeze(cur_img_batch))
+                    img_x.append(np.squeeze(cur_img_batch))
 
-                    if sns is not None:
-                        sns_x.append(sns)
-
+                if sns is not None:
+                    sns_x.append(sns)
+                if len(labels) > 0:
                     y.append(labels[img_ix])
+                else:
+                    activity = img[0].split(os.path.sep)[-2].split("_")[1]
+                    y.append(activity_dict_vuzix().index(activity))
 
-                    if len(img_x) == batch_size or len(sns_x) == batch_size:
-                        # print(img)
+                if len(img_x) == batch_size or len(sns_x) == batch_size:
+                    # print(img)
 
-                        if type == "img":
-                            yield np.array(img_x), np.eye(20)[np.array(y).astype(int)]
+                    if type == "img":
+                        yield np.array(img_x), np.eye(20)[np.array(y).astype(int)]
+                        #print("\n{} - Returning batch size of {}".format(img_ix, batch_size))
 
-                        if type == "sns":
-                            if len(sns_x) < batch_size:
-                                print("Empty Sensor Bath")
-                            yield np.array(sns_x), np.array(y)
+                    if type == "sns":
+                        if len(sns_x) < batch_size:
+                            print("Empty Sensor Bath")
+                        yield np.array(sns_x), np.array(y)
+                        #print("\n{} - Returning batch size of {}".format(img_ix, batch_size))
 
-                        img_x, sns_x, y = ([], [], [])
+                    img_x, sns_x, y = ([], [], [])
 
     def extract_files(self, folders=['vuzix/']):
         """After we have all of our videos split between train and test, and

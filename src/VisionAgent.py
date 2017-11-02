@@ -171,7 +171,7 @@ class VisionAgent(object):
         else:
             for layer in base_model.layers[:-2]:
                 layer.trainable = False
-        opt = SGD(lr=self.INIT_LR, momentum=0.9)
+        opt = RMSprop()
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
     def setup_to_finetune(self, model, fine_tune_lr=0.0001):
@@ -250,13 +250,10 @@ class VisionAgent(object):
             flow_from_dir = MultimodalDataset.flow_from_dir
 
         """Use transfer learning and fine-tuning to train a network on a new dataset"""
-        all_val_samples, _ = MultimodalDataset.get_all_files(args.val_dir, 1,
-                                                             max_frames_per_video)
-        nb_val_samples = len(all_val_samples)
+        nb_val_samples = MultimodalDataset.get_total_size(args.val_dir, max_frames_per_video)
 
-        all_train_samples, _ = MultimodalDataset.get_all_files(args.train_dir, 1,
-                                                               max_frames_per_video)
-        nb_train_samples = len(all_train_samples)
+        nb_train_samples = MultimodalDataset.get_total_size(args.train_dir, max_frames_per_video)
+
         nb_epoch_fine_tune = int(args.nb_epoch_fine_tune)
         nb_epoch_transferlearn = int(args.nb_epoch_transfer_learn)
         batch_size = int(args.batch_size)
@@ -277,8 +274,6 @@ class VisionAgent(object):
             monitor='val_acc',
             save_best_only=True)
 
-        self.NUM_EPOCHS = nb_epoch_transferlearn
-        lr_decay = LearningRateScheduler(poly_decay)
 
         if args.fine_tuned_weights == "" and args.fbf_model_weights == "":
 
@@ -288,7 +283,7 @@ class VisionAgent(object):
                 epochs=nb_epoch_transferlearn,
                 validation_data=flow_from_dir(root=args.val_dir, max_frames_per_video=150, batch_size=args.batch_size),
                 validation_steps=math.ceil(nb_val_samples / batch_size),
-                callbacks=[checkpointer, lr_decay])
+                callbacks=[checkpointer])
             # transfer learning
 
         else:
@@ -381,7 +376,7 @@ if __name__ == "__main__":
     a.add_argument("--train_dir", default='multimodal_dataset/video/splits/train')
     a.add_argument("--val_dir", default='multimodal_dataset/video/splits/test')
     a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
-    a.add_argument("--nb_epoch_transfer_learn", default=3, type=int)
+    a.add_argument("--nb_epoch_transfer_learn", default=2, type=int)
     a.add_argument('--fine_tune_lr', default=0.0001, type=float)
     a.add_argument("--fine_tuned_weights", default="")
     a.add_argument("--fbf_model_weights", default="")

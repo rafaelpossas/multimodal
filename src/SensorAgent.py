@@ -89,13 +89,9 @@ class SensorAgent(object):
         batch_size = int(args.batch_size)
         group_size = args.sensor_chunk_size
 
-        all_val_samples, _ = MultimodalDataset.get_all_files(args.val_dir, args.sensor_chunk_size,
-                                                             max_frames_per_video)
-        nb_val_samples = len(all_val_samples) * args.sensor_chunk_size
+        nb_val_samples = MultimodalDataset.get_total_size(args.val_dir, max_frames_per_video)
 
-        all_train_samples, _ = MultimodalDataset.get_all_files(args.train_dir, args.sensor_chunk_size,
-                                                               max_frames_per_video)
-        nb_train_samples = len(all_train_samples) * args.sensor_chunk_size
+        nb_train_samples = MultimodalDataset.get_total_size(args.train_dir, max_frames_per_video)
 
         model = self.get_model(input_shape=(args.sensor_chunk_size, args.num_sensors * 3),
                                output_shape=20, layer_size=args.layer_size,
@@ -135,13 +131,9 @@ class SensorAgent(object):
 
         model = load_model(args.weights)
 
-        all_val_samples, _ = MultimodalDataset.get_all_files(args.val_dir, args.sensor_chunk_size,
-                                                             max_frames_per_video)
-        nb_val_samples = len(all_val_samples) * args.sensor_chunk_size
+        nb_val_samples = MultimodalDataset.get_total_size(args.val_dir, max_frames_per_video)
 
-        all_train_samples, _ = MultimodalDataset.get_all_files(args.train_dir, args.sensor_chunk_size,
-                                                               max_frames_per_video)
-        nb_train_samples = len(all_train_samples) * args.sensor_chunk_size
+        nb_train_samples = MultimodalDataset.get_total_size(args.train_dir, max_frames_per_video)
 
         print("Evaluating on Test Set")
         result = model.evaluate_generator(flow_from_dir(root=args.val_dir, group_size=args.sensor_chunk_size,
@@ -175,10 +167,10 @@ if __name__ == "__main__":
     a.add_argument("--val_dir", default='multimodal_dataset/video/splits/test')
     a.add_argument("--batch_size", default=100, type=int)
     a.add_argument("--nb_epochs", default=500, type=int)
-    a.add_argument("--dropout", default=0.8, type=float)
+    a.add_argument("--dropout", default=0.6, type=float)
     a.add_argument("--sensor_chunk_size", default=10, type=int)
     a.add_argument("--sensor_step_size", default=1, type=int)
-    a.add_argument("--layer_size", default=256, type=int)
+    a.add_argument("--layer_size", default=128, type=int)
     a.add_argument("--grid_search", action="store_true")
     a.add_argument("--evaluate", action="store_true")
     a.add_argument("--train", action="store_true")

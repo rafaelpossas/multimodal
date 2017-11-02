@@ -33,6 +33,7 @@ parser.add_argument('--visualise', action='store_true',
 
 parser.add_argument('-v', '--verbose', action='count', dest='verbosity',
                     default=0, help='Set verbosity.')
+parser.add_argument("--evaluate", action="store_true")
 parser.add_argument('--task', default=0, type=int, help='Task index')
 parser.add_argument('--job-name', default="worker", help='worker or ps')
 parser.add_argument('--alpha', default=0.0, help="alpha reward for camera", type=float)

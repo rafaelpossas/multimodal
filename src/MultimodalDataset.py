@@ -44,7 +44,7 @@ class MultimodalDataset(object):
         return activities_files  # Self-explanatory.
 
     @staticmethod
-    def get_all_files(root, group_size, max_samples=150):
+    def get_all_files(root, group_size, max_samples=150, sns_file_name="sns.npy"):
         files = sorted(glob.glob(os.path.join(root, '*', '*', '*.jpg')))
         all_grouped_img = []
         all_grouped_sns = []
@@ -66,7 +66,7 @@ class MultimodalDataset(object):
                     sns_file = None
 
                 if sns_file is None:
-                    sns_file = np.load(os.path.join(*img_file_split[0:-1], "sns.npy"))
+                    sns_file = np.load(os.path.join(*img_file_split[0:-1], sns_file_name))
 
                 if len(grouped_files) < group_size and cur_ix <= max_samples:
                     grouped_files.append(img_file)
@@ -110,6 +110,10 @@ class MultimodalDataset(object):
 
         while True:
             all_grouped_img, all_grouped_sns = MultimodalDataset.get_all_files(root, group_size, max_frames_per_video)
+
+            if len(all_grouped_img) == 0 and len(all_grouped_sns) == 0:
+                raise Exception("There are no data in the arrays for the generator")
+
             #print("Going through the entire batch on {}".format(root))
             if shuffle_arrays:
                 arr_ix = np.arange(len(all_grouped_img))
@@ -306,12 +310,15 @@ class MultimodalDataset(object):
         return act_str_arr
 
     @staticmethod
-    def get_total_size(image_root):
-        activities = glob.glob(os.path.join(image_root, '*'))
+    def get_total_size(image_root, max_frames_per_video):
+        recordings = glob.glob(os.path.join(image_root, '*'))
         counter = 0
-        for act in activities:
-            seqs = glob.glob(os.path.join(act, '*', '*.jpg'))
-            counter += len(seqs)
+        for rec in sorted(recordings):
+            imgs = glob.glob(os.path.join(rec, '*', '*.jpg'))
+            for img in sorted(imgs):
+                frame = img.split(os.path.sep)[-1].split(".")[0].split("_")[-1]
+                if int(frame) <= max_frames_per_video:
+                    counter += 1
         return counter
 
     def extract_files(self, fps=10, video_root="multimodal_dataset/video"):
