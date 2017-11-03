@@ -9,6 +9,7 @@ from VisionAgent import VisionAgent
 from ActivityEnvironment import ActivityEnvironment
 from a3c import A3C
 import datetime
+import numpy as np
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -26,9 +27,25 @@ def run(args, server):
     sensor_agent = SensorAgent()
     vision_agent = VisionAgent()
     current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M")
+
+    if args.dttype == 'multimodal':
+        dataset_type = args.dttype
+        img_chunk_size = 10
+        sns_chunk_size = 10
+        max_samples = 150
+        iter_copy_over = 5
+
+    if args.dttype == 'vuzix':
+        dataset_type = args.dttype
+        img_chunk_size = 15
+        sns_chunk_size = 15
+        max_samples = 4500
+        iter_copy_over = 20
+
     env = ActivityEnvironment(dataset=args.dataset,
                               sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=args.alpha, env_id=args.task,
-                              time=current_time)
+                              time=current_time,img_chunk_size=img_chunk_size, sns_chunk_size=sns_chunk_size,
+                              dt_type=dataset_type, img_max_samples=max_samples, sns_max_samples=max_samples)
 
     trainer = A3C(env, args.task, args.visualise, args.sensorpb, args.visionpb)
 
@@ -58,6 +75,14 @@ def run(args, server):
     summary_writer = tf.summary.FileWriter("{} + {}".format(logdir,args.task))
 
     logger.info("Events directory: {}_{}".format(logdir, args.task))
+
+    if args.evaluate:
+        save_model_secs = 0
+        save_summaries_secs = 0
+    else:
+        save_model_secs = 30
+        save_summaries_secs = 30
+
     sv = tf.train.Supervisor(is_chief=(args.task == 0),
                              logdir=logdir,
                              saver=saver,
@@ -67,8 +92,8 @@ def run(args, server):
                              summary_writer=summary_writer,
                              ready_op=ready_op,
                              global_step=trainer.global_step,
-                             save_model_secs=30, #TODO: move to arguments
-                             save_summaries_secs=30) #TODO: move to arguments
+                             save_model_secs=save_model_secs, #TODO: move to arguments
+                             save_summaries_secs=save_summaries_secs) #TODO: move to arguments
 
     num_global_steps = 100000000 # TODO: move to arguments
 
@@ -80,7 +105,7 @@ def run(args, server):
         with sv.managed_session(server.target,
                                 config=config) as sess, sess.as_default():
             sess.run(trainer.sync)
-            trainer.start(sess, summary_writer)
+            trainer.start(sess, summary_writer, iter_copy_over)
             global_step = sess.run(trainer.global_step)
             logger.info("Starting training at step={}".format(global_step))
             while not sv.should_stop() and (not num_global_steps or
@@ -92,8 +117,21 @@ def run(args, server):
             sess.run(trainer.sync)
             global_step = sess.run(trainer.global_step)
             logger.info("Starting training at step={}".format(global_step))
+            episode_generator = env.episode_generator(stop_at_full_sweep=True)
+            generator = env.sample_from_episode(episode_generator)
+            y_arr, y_true_arr, actions = [], [], []
             while not sv.should_stop():
-                trainer.evaluate(env)
+                try:
+                    y, y_true, action = trainer.evaluate(generator, env, sess)
+                    y_arr.append(y)
+                    y_true_arr.append(y_true)
+                    actions.append(action)
+                except StopIteration:
+                    stacked = np.column_stack((y_arr, y_true_arr, actions))
+                    accuracy = sum(stacked[:, 0] == stacked[:, 1])/float(len(y_true_arr))
+                    np.save(str(round(accuracy, 2))+'_policy_results.npy', stacked)
+                    print("Final Accuracy {}".format(accuracy))
+                    sv.request_stop()
 
     # Ask for all the services to stop.
     sv.stop()

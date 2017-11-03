@@ -12,6 +12,13 @@ def activity_dict():
     }
     return act_dict
 
+def activity_dict_plain():
+    act_dict = ['walking', 'walking upstairs', 'walking downstairs', 'riding elevator up', 'riding elevator down',
+                'riding escalator up', 'riding escalator down', 'sitting', 'eating', 'drinking', 'texting', 'phone calls',
+                'working on pc', 'reading', 'writing sentences', 'organizing files', 'running', 'push-ups', 'sit-ups',
+                'cycling'
+    ]
+    return act_dict
 
 def sensor_columns():
     all_sns = ['accx', 'accy', 'accz',

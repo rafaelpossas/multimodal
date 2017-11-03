@@ -1,11 +1,14 @@
 import numpy as np
-from MultimodalDataset import MultimodalDataset
-from globals import activity_dict
-import queue as q
-from glob import glob
 import os
 import h5py
 import tensorflow as tf
+import queue as q
+
+from glob import glob
+from MultimodalDataset import MultimodalDataset
+from globals import activity_dict
+
+
 
 class ActivityEnvironment(object):
 
@@ -38,7 +41,7 @@ class ActivityEnvironment(object):
                  dataset="multimodal_dataset/video/splits/train/",
                  sensors=['accx', 'accy', 'accz', 'gyrx','gyry','gyrz'],
                  img_max_samples=150, sns_max_samples=150,
-                 alpha=0, logger=None, time=None, env_id=0):
+                 alpha=0, logger=None, time=None, env_id=0, dt_type='multimodal'):
 
         self.dataset = dataset
         self.sensors = sensors
@@ -61,11 +64,14 @@ class ActivityEnvironment(object):
         self.vision_consumption_per_step = (self.camera_consumption_per_hour/3600) * \
                                            ((self.img_chunk_size*self.total_seconds)/img_max_samples)
         self.alpha = alpha
-        self.state_generator = self.sample_from_episode()
-        self.episode_generator = self._episode_generator()
+
+        if dt_type == "multimodal":
+            self.state_generator = self.sample_from_episode(self.episode_generator())
+        else:
+            self.state_generator = self.sample_from_episode_vuzix(self.episode_generator_vuzix())
 
         self.datasets_full_sweeps = 0
-        self.observation_shape = (10, 6)
+        self.observation_shape = (sns_chunk_size, 6)
         self.action_space = 2
 
         self.all_scores = []
@@ -205,7 +211,7 @@ class ActivityEnvironment(object):
 
                 self.logger.info('Action probability average - Sensor: %.2f Vision %.2f' % (action_avg[0], action_avg[1]))
 
-            print('Episode: %d - Reward: %.2f - Avg Score: %.2f - Avg Accuracy: %.2f'
+            print('\nEpisode: %d - Reward: %.2f - Avg Score: %.2f - Avg Accuracy: %.2f'
                         % (episode, score, score_mean, acc_mean))
 
             print('Number of steps - Sensor: %d, Vision: %d - Avg rewards - Sensor: %.2f, Vision %.2f'
@@ -242,9 +248,68 @@ class ActivityEnvironment(object):
 
         return state, reward, self.done
 
-    def sample_from_episode(self):
+    def episode_generator_vuzix(self, stop_at_full_sweep=False):
+        datasets_full_sweeps = 0
+
         while True:
-            img_x, img_y, sns_x, sns_y = next(self.episode_generator)
+            all_dirs = glob(os.path.join(self.dataset, '*'))
+            np.random.shuffle(all_dirs)
+
+            if datasets_full_sweeps > 0 and stop_at_full_sweep:
+                raise StopIteration
+
+            for rec in all_dirs:
+                print(rec)
+                all_grouped_img_x, all_grouped_sns_x, all_grouped_sns_y = [], [], []
+
+                files = sorted(glob(os.path.join(rec, '*', '*.jpg')))
+                sns_x = np.load(os.path.join(rec, "sns_x.npy"))
+                sns_y = np.load(os.path.join(rec, "sns_y.npy"))
+                grouped_files = []
+                counter = 0
+                for img_file in files:
+                    img_file_split = img_file.split(os.path.sep)
+                    cur_ix = int(img_file_split[-1].split(".")[0].split("_")[-1])
+
+                    if len(grouped_files) < self.img_chunk_size and cur_ix <= self.img_max_samples:
+                        grouped_files.append(img_file)
+
+                    if len(grouped_files) == self.img_chunk_size:
+                        all_grouped_img_x.append(grouped_files)
+                        all_grouped_sns_x.append(sns_x[counter])
+                        all_grouped_sns_y.append(sns_y[counter])
+                        counter += 1
+                        grouped_files = []
+
+                yield all_grouped_img_x, all_grouped_sns_x, all_grouped_sns_y
+
+            datasets_full_sweeps += 1
+
+    def sample_from_episode_vuzix(self, episode_generator):
+
+        resize_shape = (448, 256)
+        img_shape = (224, 224)
+        episode = 0
+        while True:
+            img_x, sns_x, y = next(episode_generator)
+            print("Episode {}: ".format(episode))
+            for img_ix, (img_group, sns_group, labels) in enumerate(zip(img_x, sns_x, y)):
+                print('\r'+str(img_ix), end="")
+                cur_img_batch = []
+
+                sns = sns_x[img_ix]
+
+                for img_file in img_group:
+                    cur_img = MultimodalDataset.get_img_from_file(img_file, resize_shape, img_shape)
+                    cur_img_batch.append(cur_img)
+
+                done = True if img_ix + 1 == len(img_x) else False
+                yield done, np.array(cur_img_batch), np.array(labels), sns, np.array(labels)
+            episode += 1
+
+    def sample_from_episode(self, episode_generator):
+        while True:
+            img_x, img_y, sns_x, sns_y = next(episode_generator)
 
             img_x, img_y = MultimodalDataset.split_windows(self.img_chunk_size, self.img_chunk_size,
                                                            img_x[np.newaxis], img_y)
@@ -256,16 +321,18 @@ class ActivityEnvironment(object):
                 done = True if cur_ix + 1 == len(img_x) else False
                 yield done, i_x, i_y, s_x, s_y
 
-    def _episode_generator(self):
-        self.datasets_full_sweeps = 0
+    def episode_generator(self, stop_at_full_sweep=False):
+        datasets_full_sweeps = 0
         while True:
             all_dirs = glob(os.path.join(self.dataset, '*', '*'))
             np.random.shuffle(all_dirs)
+            if datasets_full_sweeps > 0 and stop_at_full_sweep:
+                raise StopIteration
 
             for act_seq in all_dirs:
+                print(act_seq)
                 img_x = []
                 source_split_arr = act_seq.split(os.path.sep)
-                sequence = source_split_arr[-1]
                 activity = source_split_arr[-2]
                 activity_number = activity_dict()[activity][0]
                 sns_file = os.path.join(act_seq, "sns.npy")
@@ -282,10 +349,12 @@ class ActivityEnvironment(object):
 
                 yield np.array(img_x), img_y, sns_x, sns_y
 
-            self.datasets_full_sweeps += 1
+            datasets_full_sweeps += 1
+
 
 if __name__ == "__main__":
-    act_env = ActivityEnvironment()
+    act_env = ActivityEnvironment(dataset="vuzix/images/splits/train", img_chunk_size=15, sns_chunk_size=15,
+                                  img_max_samples=4500, sns_max_samples=4500, dt_type="vuzix")
     act_env.reset()
     while True:
-        act_env.step(act_env.SENSOR)
+        next(act_env.state_generator)

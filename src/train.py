@@ -24,7 +24,8 @@ def create_commands(session, num_workers, remotes, logdir, shell='bash', mode='t
         '--alpha', args.alpha,
         '--sensorpb', args.sensorpb,
         '--visionpb', args.visionpb,
-        '--dataset', args.dataset]
+        '--dataset', args.dataset,
+        '--dttype', args.dttype]
 
     if visualise:
         base_cmd += ['--visualise']

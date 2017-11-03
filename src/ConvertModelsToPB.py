@@ -49,7 +49,7 @@ def convert_to_pb(model_file, output_fld='models/production/tb_models/'):
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
-    a.add_argument("--model_file", default='models/production/multimodal_sns_0.611429-0.71.hdf5')
+    a.add_argument("--model_file", default='models/production/vuzix_sns_0.587838-0.65.hdf5')
     a.add_argument("--output_folder", default='models/production/tb_models')
 
     args = a.parse_args()

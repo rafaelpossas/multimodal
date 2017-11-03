@@ -3,6 +3,10 @@ from collections import namedtuple
 import numpy as np
 import tensorflow as tf
 from model import LSTMPolicy
+from MultimodalDataset import MultimodalDataset
+from globals import activity_dict
+import os
+from glob import glob
 import scipy.signal
 from tensorflow.python.platform import gfile
 def discount(x, gamma):
@@ -66,14 +70,12 @@ def env_runner(env, policy, num_local_steps, summary_writer, render):
     rewards = 0
     running_mean = None
     episode = 0
-
     while True:
         terminal_end = False
         rollout = PartialRollout()
         for _ in range(num_local_steps):
             fetched = policy.act(last_state, *last_features)
             action, softmax, value_, features = fetched[0], fetched[1], fetched[2], fetched[3:]
-            print(softmax)
             # argmax to convert from one-hot
 
             state, reward, terminal = env.step(action.argmax(),
@@ -214,21 +216,35 @@ class A3C(object):
             self.summary_writer = None
             self.local_steps = 0
 
-    def start(self, sess, summary_writer):
+    def start(self, sess, summary_writer, iter_copy_over=5):
         self.summary_writer = summary_writer
         self.rollout_provider = env_runner(self.env,
                                            self.local_network,
-                                           5, #TODO: Move to args
+                                           iter_copy_over, #TODO: Move to args
                                            self.summary_writer,
                                            self.visualise)
 
-    def evaluate(self, env):
+    def evaluate(self, generator, env, session):
         policy = self.network
-        last_state = env.reset()
+
+        done, cur_img_input, cur_img_label, cur_sns_input, cur_sns_label = next(generator)
         last_features = policy.get_initial_features()
-        fetched = policy.act(last_state, *last_features)
+
+        fetched = policy.act(cur_sns_input, *last_features)
         action, softmax, value_, features = fetched[0], fetched[1], fetched[2], fetched[3:]
-        print(softmax)
+
+        pred_sns = env.sensor_agent.predict_from_tf(cur_sns_input, session=session)
+        pred_img = env.vision_agent.predict_from_tf(cur_img_input, session=session)
+
+        if action.argmax() == env.SENSOR:
+            y = pred_sns
+            y_true = np.argmax(cur_sns_label)
+
+        if action.argmax() == env.CAMERA:
+            y = pred_img
+            y_true = np.argmax(cur_img_label)
+
+        return y, y_true, action
 
     def process(self, sess):
         """

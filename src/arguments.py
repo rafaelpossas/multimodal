@@ -12,7 +12,10 @@ parser.add_argument('--visionpb', default='models/production/tb_models/vision_mo
                     help='Protobuff File for the Vision Network')
 
 parser.add_argument('--dataset', default='multimodal_dataset/video/splits/train', type=str,
-                    help='Protobuff File for the Sensor Network')
+                    help='Dataset path')
+
+parser.add_argument('--dttype', default='vuzix', type=str,
+                    help='Dataset Type')
 
 parser.add_argument('-l', '--log-dir', type=str, default='/tmp/pong',
                     help='Log directory path')
