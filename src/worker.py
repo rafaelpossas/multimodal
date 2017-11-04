@@ -40,7 +40,7 @@ def run(args, server):
         img_chunk_size = 15
         sns_chunk_size = 15
         max_samples = 4500
-        iter_copy_over = 20
+        iter_copy_over = 5
 
     env = ActivityEnvironment(dataset=args.dataset,
                               sensor_agent=sensor_agent, vision_agent=vision_agent, alpha=args.alpha, env_id=args.task,

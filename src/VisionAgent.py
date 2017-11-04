@@ -65,8 +65,9 @@ class VisionAgent(object):
             raise Exception("The CNN model needs to be provided")
 
     def predict_from_tf(self, input, session=None):
-        if len(input.shape) < 3:
-            input = input[np.newaxis, :, :]
+
+        if len(input.shape) < 4:
+            input = input[np.newaxis]
 
         if session is None:
             session = tf.Session()
@@ -78,11 +79,14 @@ class VisionAgent(object):
             if len(img_x.shape) < 4:
                 img_x = img_x[np.newaxis]
             pred.append(session.run([self.output_tf], {self.input_tf: img_x}))
+        if num_samples > 1:
+            pred = np.argmax(np.array(np.squeeze(pred)), axis=1)
+            pred = pred.reshape((int(pred.shape[0] / num_samples), num_samples, 1))
+            pred = [mode(arr.flatten())[0][0] for arr in pred][0]
+        else:
+            pred = np.argmax(np.squeeze(pred[0]))
 
-        pred = np.argmax(np.array(np.squeeze(pred)), axis=1)
-        pred = pred.reshape((int(pred.shape[0] / num_samples), num_samples, 1))
-
-        return [mode(arr.flatten())[0][0] for arr in pred][0]
+        return pred
 
     def intermediate_lrcn_model(self, args):
         _, model = self.get_fbf_model(args)
@@ -373,8 +377,8 @@ class VisionAgent(object):
 
 if __name__ == "__main__":
     a = argparse.ArgumentParser()
-    a.add_argument("--train_dir", default='multimodal_dataset/video/splits/train')
-    a.add_argument("--val_dir", default='multimodal_dataset/video/splits/test')
+    a.add_argument("--train_dir", default='/home/rafaelpossas/dev/dataset/multimodal/train')
+    a.add_argument("--val_dir", default='/home/rafaelpossas/dev/dataset/multimodal/test')
     a.add_argument("--nb_epoch_fine_tune", default=20, type=int)
     a.add_argument("--nb_epoch_transfer_learn", default=2, type=int)
     a.add_argument('--fine_tune_lr', default=0.0001, type=float)

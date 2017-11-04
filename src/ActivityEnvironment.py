@@ -6,6 +6,7 @@ import queue as q
 
 from glob import glob
 from MultimodalDataset import MultimodalDataset
+from VuzixDataset import VuzixDataset
 from globals import activity_dict
 
 
@@ -253,35 +254,42 @@ class ActivityEnvironment(object):
 
         while True:
             all_dirs = glob(os.path.join(self.dataset, '*'))
-            np.random.shuffle(all_dirs)
+            all_grouped_img, all_grouped_sns, labels = VuzixDataset.get_all_files(self.dataset, 15,
+                                                                                  4500)
+            all_grouped_img = np.array([all_grouped_img[i:i + 15] for i in range(0, len(all_grouped_img), 15)])
+            all_grouped_sns = np.array([all_grouped_sns[i:i + 15] for i in range(0, len(all_grouped_sns), 15)])
+            labels = np.array([labels[i:i + 15] for i in range(0, len(labels), 15)])
+
+            arr_ix = np.arange(len(all_grouped_img))
+            np.random.shuffle(arr_ix)
+            all_grouped_img = all_grouped_img[arr_ix]
+            all_grouped_sns= all_grouped_sns[arr_ix]
+            labels = labels[arr_ix]
 
             if datasets_full_sweeps > 0 and stop_at_full_sweep:
                 raise StopIteration
 
-            for rec in all_dirs:
-                print(rec)
-                all_grouped_img_x, all_grouped_sns_x, all_grouped_sns_y = [], [], []
+            for ep_img, ep_sns, ep_label in zip(all_grouped_img, all_grouped_sns, labels):
+                # files = sorted(glob(os.path.join(rec, '*', '*.jpg')))
+                # sns_x = np.load(os.path.join(rec, "sns_x.npy"))
+                # sns_y = np.load(os.path.join(rec, "sns_y.npy"))
+                # grouped_files = []
+                # counter = 0
+                # for img_file in files:
+                #     img_file_split = img_file.split(os.path.sep)
+                #     cur_ix = int(img_file_split[-1].split(".")[0].split("_")[-1])
+                #
+                #     if len(grouped_files) < self.img_chunk_size and cur_ix <= self.img_max_samples:
+                #         grouped_files.append(img_file)
+                #
+                #     if len(grouped_files) == self.img_chunk_size:
+                #         all_grouped_img_x.append(grouped_files)
+                #         all_grouped_sns_x.append(sns_x[counter])
+                #         all_grouped_sns_y.append(sns_y[counter])
+                #         counter += 1
+                #         grouped_files = []
 
-                files = sorted(glob(os.path.join(rec, '*', '*.jpg')))
-                sns_x = np.load(os.path.join(rec, "sns_x.npy"))
-                sns_y = np.load(os.path.join(rec, "sns_y.npy"))
-                grouped_files = []
-                counter = 0
-                for img_file in files:
-                    img_file_split = img_file.split(os.path.sep)
-                    cur_ix = int(img_file_split[-1].split(".")[0].split("_")[-1])
-
-                    if len(grouped_files) < self.img_chunk_size and cur_ix <= self.img_max_samples:
-                        grouped_files.append(img_file)
-
-                    if len(grouped_files) == self.img_chunk_size:
-                        all_grouped_img_x.append(grouped_files)
-                        all_grouped_sns_x.append(sns_x[counter])
-                        all_grouped_sns_y.append(sns_y[counter])
-                        counter += 1
-                        grouped_files = []
-
-                yield all_grouped_img_x, all_grouped_sns_x, all_grouped_sns_y
+                yield ep_img, ep_sns, ep_label
 
             datasets_full_sweeps += 1
 
@@ -292,7 +300,7 @@ class ActivityEnvironment(object):
         episode = 0
         while True:
             img_x, sns_x, y = next(episode_generator)
-            print("Episode {}: ".format(episode))
+            print("\nEpisode {}: ".format(episode))
             for img_ix, (img_group, sns_group, labels) in enumerate(zip(img_x, sns_x, y)):
                 print('\r'+str(img_ix), end="")
                 cur_img_batch = []
@@ -321,11 +329,16 @@ class ActivityEnvironment(object):
                 done = True if cur_ix + 1 == len(img_x) else False
                 yield done, i_x, i_y, s_x, s_y
 
-    def episode_generator(self, stop_at_full_sweep=False):
+    def episode_generator(self, stop_at_full_sweep=False, sort=False):
         datasets_full_sweeps = 0
         while True:
             all_dirs = glob(os.path.join(self.dataset, '*', '*'))
-            np.random.shuffle(all_dirs)
+
+            if not sort:
+                np.random.shuffle(all_dirs)
+            else:
+                all_dirs = sorted(all_dirs)
+
             if datasets_full_sweeps > 0 and stop_at_full_sweep:
                 raise StopIteration
 
@@ -353,7 +366,7 @@ class ActivityEnvironment(object):
 
 
 if __name__ == "__main__":
-    act_env = ActivityEnvironment(dataset="vuzix/images/splits/train", img_chunk_size=15, sns_chunk_size=15,
+    act_env = ActivityEnvironment(dataset="/home/rafaelpossas/dev/dataset/vuzix//train", img_chunk_size=15, sns_chunk_size=15,
                                   img_max_samples=4500, sns_max_samples=4500, dt_type="vuzix")
     act_env.reset()
     while True:
