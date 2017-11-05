@@ -9,7 +9,6 @@ import keras.backend as K
 
 from MultimodalDataset import MultimodalDataset
 from VuzixDataset import VuzixDataset
-from keras.utils.training_utils import multi_gpu_model
 
 import argparse
 import sys
@@ -199,8 +198,7 @@ class VisionAgent(object):
         x = Dropout(dropout)(x)
         predictions = Dense(nb_classes, activation='softmax')(x)  # new softmax layer
 
-        with tf.device("/cpu:0"):
-            model = Model(inputs=base_model.input, outputs=predictions)
+        model = Model(inputs=base_model.input, outputs=predictions)
 
         return model
 
@@ -268,8 +266,6 @@ class VisionAgent(object):
         base_model, model = self.get_fbf_model(args.architecture, args.num_classes, args.fc_size, args.dropout,
                                                args.pre_trained_model)
         # fine-tuning
-        if args.gpus > 1:
-            model = multi_gpu_model(model, gpus=args.gpus)
 
         self.setup_to_transfer_learn(model, base_model)
         checkpointer = ModelCheckpoint(
@@ -397,7 +393,6 @@ if __name__ == "__main__":
     a.add_argument("--lstm_size", default=16, type=int)
     a.add_argument("--num_classes", default=20, type=int)
     a.add_argument("--evaluate", action="store_true")
-    a.add_argument("--gpus", default=1, type=int)
 
     vision_agent = VisionAgent()
     args = a.parse_args()
