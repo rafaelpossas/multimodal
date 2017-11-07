@@ -13,10 +13,18 @@ def activity_dict():
     return act_dict
 
 def activity_dict_plain():
-    act_dict = ['walking', 'walking upstairs', 'walking downstairs', 'riding elevator up', 'riding elevator down',
-                'riding escalator up', 'riding escalator down', 'sitting', 'eating', 'drinking', 'texting', 'phone calls',
-                'working on pc', 'reading', 'writing sentences', 'organizing files', 'running', 'push-ups', 'sit-ups',
-                'cycling'
+    act_dict = ['(a) walking', '(b) walking upstairs', '(c) walking downstairs', '(d) riding elevator up', '(e) riding elevator down',
+                '(f) riding escalator up', '(g) riding escalator down', '(h) sitting', '(i) eating', '(j) drinking', '(k) texting', '(l) phone calls',
+                '(m) working on pc', '(n) reading', '(o) writing sentences', '(p) organizing files', '(q) running', '(r) push-ups', '(s) sit-ups',
+                '(t) cycling'
+    ]
+    return act_dict
+
+def activity_dict_plain_letters():
+    act_dict = ['(a)', '(b)', '(c)', '(d)', '(e)',
+                '(f)', '(g)', '(h)', '(i)', '(j)', '(k)', '(l)',
+                '(m)', '(n)', '(o)', '(p)', '(q)', '(r)', '(s)',
+                '(t)'
     ]
     return act_dict
 

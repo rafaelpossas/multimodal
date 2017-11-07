@@ -11,7 +11,7 @@ from tensorflow.python.platform import gfile
 from ActivityEnvironment import ActivityEnvironment
 from SensorAgent import SensorAgent
 from VisionAgent import VisionAgent
-from globals import activity_dict_plain
+from globals import activity_dict_plain,activity_dict_plain_letters, activity_dict_vuzix
 from sklearn.metrics import confusion_matrix, classification_report, precision_recall_fscore_support
 from sklearn.utils.multiclass import unique_labels
 
@@ -19,7 +19,8 @@ from sklearn.utils.multiclass import unique_labels
 
 def classification_report_to_pandas(ground_truth,
                                     predictions,
-                                    full_path="test_pandas.csv"):
+                                    full_path="test_pandas.csv",
+                                    activity_dict=None):
     """
     Saves the classification report to csv using the pandas module.
     :param ground_truth: list: the true labels
@@ -48,14 +49,14 @@ def classification_report_to_pandas(ground_truth,
 
     results_pd['class'] = results_pd['class'].apply(pd.to_numeric)
     results_pd = results_pd.sort_values(by=['class']).reset_index(drop=True)
-    results_pd['class'] = results_pd['class'].apply(lambda x: activity_dict_plain()[x])
+    results_pd['class'] = results_pd['class'].apply(lambda x: activity_dict[x])
     results_pd = results_pd[['class', 'precision', 'recall', 'f_score', 'support']]
     return results_pd
 
 
-def confusion_matrix_df(y_true, y_pred):
+def confusion_matrix_df(y_true, y_pred, activity_dict):
     cm = confusion_matrix(y_true, y_pred)
-    df_cm = pd.DataFrame(cm, index=activity_dict_plain(), columns=activity_dict_plain()).round(2)
+    df_cm = pd.DataFrame(cm, index=activity_dict, columns=activity_dict).round(2)
     return df_cm
 
 
@@ -93,14 +94,21 @@ def evaluate(args):
                                                                                          'global/Softmax:0',
                                                                                          'global/Placeholder_1:0',
                                                                                          'global/Placeholder_2:0'])
+        if args.dttype == "multimodal":
+            episode_generator = env.episode_generator(stop_at_full_sweep=True, sort=True)
+            generator = env.sample_from_episode(episode_generator)
+            activity_dict = activity_dict_plain()
+        else:
+            episode_generator = env.episode_generator_vuzix(stop_at_full_sweep=True)
+            generator = env.sample_from_episode_vuzix(episode_generator)
+            activity_dict = activity_dict_vuzix()
 
-        episode_generator = env.episode_generator(stop_at_full_sweep=True, sort=True)
-        generator = env.sample_from_episode(episode_generator)
         y_arr, y_true_arr, actions, y_label_arr, y_true_label_arr, actions_label = [], [], [], [], [], []
 
         if not args.evaluate_policy:
             args.policypb = args.visionpb if args.evaluate_model == "vision" else args.sensorpb
-
+        actions_probabilities = np.zeros((20, 2))
+        activity_count = np.zeros((20, 1))
         while True:
 
             try:
@@ -113,6 +121,8 @@ def evaluate(args):
                     softmax = sess.run([output_x], {input_x: cur_sns_input[np.newaxis, :, :],
                                                     hidden_1: last_features[0], hidden_2: last_features[1]})
 
+                    actions_probabilities[np.argmax(cur_sns_label)] += np.squeeze(softmax)
+                    activity_count[np.argmax(cur_sns_label)] += 1
                     action = np.random.choice([0, 1], p=np.squeeze(softmax))
 
                 else:
@@ -174,6 +184,10 @@ def evaluate(args):
                         actions_label.append(action_label)
 
             except StopIteration:
+                actions_prob_dict = dict()
+
+                for ix in range(len(actions_probabilities)):
+                    actions_prob_dict[activity_dict[ix]] = actions_probabilities[ix] / activity_count[ix]
 
                 stacked = np.column_stack((y_arr, y_label_arr, y_true_arr, y_true_label_arr, actions, actions_label))
                 accuracy = sum(stacked[:, 0] == stacked[:, 2]) / float(len(y_true_arr))
@@ -188,18 +202,20 @@ def evaluate(args):
                 stats_file_path = base_file_path+"_stats"
                 cm_file_path = base_file_path+"_cm"
                 npy_file_path = base_file_path+".npy"
+                action_prob_path = base_file_path+"_action_probs.npy"
 
                 if not args.evaluate_policy:
                     title = "Agent: {} - Accuracy {}%".format(args.evaluate_model, (np.round(accuracy, 2)*100))
                 else:
-                    title = "Alpha {} - Motion Usage {} - Vision Usage {} - Accuracy {}%"\
+                    title = "λ = {} - Motion Usage {} - Vision Usage {} - Accuracy {}%"\
                         .format(0, round(sensor_usage, 2), round(camera_usage, 2), (round(accuracy, 2)*100))
 
                 get_stats_from_np(stacked,stats_file_path, cm_file_path,
-                                  title=title
-                                  .format(0, round(sensor_usage, 2), round(camera_usage, 2)))
+                                  title=title.format(0, round(sensor_usage, 2), round(camera_usage, 2)),
+                                  activity_dict=activity_dict)
 
                 np.save(npy_file_path, stacked)
+                np.save(action_prob_path, actions_prob_dict)
 
                 print("Final Accuracy {0:.2f}".format(accuracy * 100))
                 print("Camera usage {} - Sensor Usage {}".format(round(camera_usage, 2),
@@ -207,22 +223,25 @@ def evaluate(args):
                 break
 
 
-def get_stats_from_np(np_array, stats_file, cm_file, title):
+def get_stats_from_np(np_array, stats_file, cm_file, title, activity_dict):
     y_true = np_array[:, 2].astype(int)
     y_pred = np_array[:, 0].astype(int)
-    df_stats = classification_report_to_pandas(y_true, y_pred)
+    df_stats = classification_report_to_pandas(y_true, y_pred, activity_dict=activity_dict)
 
     cm = confusion_matrix(y_true, y_pred)
     cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-    df_cm = pd.DataFrame(cm, index=activity_dict_plain(), columns=activity_dict_plain()).round(2)
+    df_cm = pd.DataFrame(cm, index=activity_dict, columns=activity_dict_plain_letters()).round(2)
 
-    sns.set(rc={"figure.figsize": (25, 25)})
+    sns.set(rc={"figure.figsize": (25, 23)})
     sns.set(font_scale=1.6)
-    hm = sns.heatmap(df_cm, annot=True, cmap="Blues")
-    hm.axes.set_title(title)
+    plt.rcParams["axes.labelsize"] = 20
+    plt.rcParams["xtick.labelsize"] = 25
+    plt.rcParams["ytick.labelsize"] = 25
+    hm = sns.heatmap(df_cm, annot=True, cmap="Blues", cbar=False)
+    hm.axes.set_title(title, fontsize=32)
     hm.axes.set_xlabel("Predicted")
     hm.axes.set_ylabel("True")
-    hm.set_xticklabels(hm.get_xticklabels(), rotation=80)
+    hm.set_xticklabels(hm.get_xticklabels(), rotation=360)
     hm.figure.savefig(cm_file+".svg", format='svg', dpi=100, bbox_inches='tight')
     hm.figure.savefig(cm_file + ".eps", format='eps', dpi=100, bbox_inches='tight')
 
@@ -239,6 +258,7 @@ if __name__ == "__main__":
     a.add_argument("--evaluate_policy", action="store_true")
     a.add_argument("--evaluate_model", default="vision", choices=['Vision', 'Motion'])
     a.add_argument("--dataset", default='multimodal_dataset/video/splits/test', required=True)
+    a.add_argument("--dttype", default='multimodal', required=True)
     a.add_argument('--sensorpb', default='models/production/tb_models/multimodal_sns_0_611429-0_71.pb',
                    type=str, help='Protobuff File for the Sensor Network', required=True)
 
@@ -248,7 +268,7 @@ if __name__ == "__main__":
     a.add_argument('--policypb', default='models/production/policies/policy_alpha_01.pb', type=str,
                    help='Protobuff File for the Vision Network')
 
-    a.add_argument('--num_runs', default=20, type=str,
+    a.add_argument('--num_runs', default=20, type=int,
                    help='Number of times to run the evaluation')
 
 
@@ -256,5 +276,5 @@ if __name__ == "__main__":
     args = a.parse_args()
     for _ in range(args.num_runs):
         evaluate(args)
-    # np_array = np.load("models/production/policies/83.71_0.05_0.95_policy_alpha_04.pb.npy")
-    # get_stats_from_np(np_array, "stats", "cm", 'test')
+    # np_array = np.load("models/production/tb_models/78.70_0.0_1.0_multimodal_sns_0_611429-0_71.pb.npy")
+    # get_stats_from_np(np_array, "stats", "cm", "Agent: {} - Accuracy {}%".format("Vision", 78.70))
