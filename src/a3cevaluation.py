@@ -265,7 +265,7 @@ if __name__ == "__main__":
     a.add_argument('--policypb', default='models/production/policies/policy_alpha_04.pb', type=str,
                    help='Protobuff File for the Vision Network')
 
-    a.add_argument('--num_runs', default=1, type=int,
+    a.add_argument('--num_runs', default=5, type=int,
                    help='Number of times to run the evaluation')
 
 
