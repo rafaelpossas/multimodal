@@ -184,10 +184,7 @@ def evaluate(args):
                         actions_label.append(action_label)
 
             except StopIteration:
-                actions_prob_dict = dict()
-
-                for ix in range(len(actions_probabilities)):
-                    actions_prob_dict[activity_dict[ix]] = actions_probabilities[ix] / activity_count[ix]
+                actions_probabilities = actions_probabilities / activity_count
 
                 stacked = np.column_stack((y_arr, y_label_arr, y_true_arr, y_true_label_arr, actions, actions_label))
                 accuracy = sum(stacked[:, 0] == stacked[:, 2]) / float(len(y_true_arr))
@@ -215,7 +212,7 @@ def evaluate(args):
                                   activity_dict=activity_dict)
 
                 np.save(npy_file_path, stacked)
-                np.save(action_prob_path, actions_prob_dict)
+                np.save(action_prob_path, actions_probabilities)
 
                 print("Final Accuracy {0:.2f}".format(accuracy * 100))
                 print("Camera usage {} - Sensor Usage {}".format(round(camera_usage, 2),
@@ -257,7 +254,7 @@ if __name__ == "__main__":
     a = argparse.ArgumentParser()
     a.add_argument("--evaluate_policy", action="store_true")
     a.add_argument("--evaluate_model", default="vision", choices=['Vision', 'Motion'])
-    a.add_argument("--dataset", default='multimodal_dataset/video/splits/test', required=True)
+    a.add_argument("--dataset", default='/Users/rafaelpossas/dataset/multimodal/test', required=True)
     a.add_argument("--dttype", default='multimodal', required=True)
     a.add_argument('--sensorpb', default='models/production/tb_models/multimodal_sns_0_611429-0_71.pb',
                    type=str, help='Protobuff File for the Sensor Network', required=True)
@@ -265,10 +262,10 @@ if __name__ == "__main__":
     a.add_argument('--visionpb', default='models/production/tb_models/multimodal_inception_010-0_860811-0_79.pb',
                    type=str, help='Protobuff File for the Vision Network', required=True)
 
-    a.add_argument('--policypb', default='models/production/policies/policy_alpha_01.pb', type=str,
+    a.add_argument('--policypb', default='models/production/policies/policy_alpha_04.pb', type=str,
                    help='Protobuff File for the Vision Network')
 
-    a.add_argument('--num_runs', default=20, type=int,
+    a.add_argument('--num_runs', default=1, type=int,
                    help='Number of times to run the evaluation')
 
 
