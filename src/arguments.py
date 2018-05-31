@@ -5,16 +5,16 @@ parser = argparse.ArgumentParser(description='Run commands')
 parser.add_argument('-w', '--num-workers', default=1, type=int,
                     help='Number of workers')
 
-parser.add_argument('--sensorpb', default='models/production/tb_models/sensor_model.pb', type=str,
+parser.add_argument('--sensorpb', default='models/production/tb_models/multimodal_sns_0_611429-0_71.pb', type=str,
                     help='Protobuff File for the Sensor Network')
 
-parser.add_argument('--visionpb', default='models/production/tb_models/vision_model.pb', type=str,
+parser.add_argument('--visionpb', default='models/production/tb_models/multimodal_inception_010-0_860811-0_79.pb', type=str,
                     help='Protobuff File for the Vision Network')
 
-parser.add_argument('--dataset', default='multimodal_dataset/video/splits/train', type=str,
+parser.add_argument('--dataset', default='splits/train', type=str,
                     help='Dataset path')
 
-parser.add_argument('--dttype', default='vuzix', type=str,
+parser.add_argument('--dttype', default='multimodal', type=str,
                     help='Dataset Type')
 
 parser.add_argument('-l', '--log-dir', type=str, default='/tmp/pong',
